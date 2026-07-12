@@ -5,7 +5,7 @@ import { BirthProfile, Placement, calculatePlacements } from "./chart";
 
 type Tier = "free" | "seeker" | "depth" | "practitioner" | "practice" | "research";
 type Mode = "beginner" | "expert";
-type Section = "today" | "birth" | "chart" | "timing" | "journal" | "practice" | "reports" | "pricing";
+type Section = "today" | "birth" | "chart" | "timing" | "journal" | "practice" | "reports" | "pricing" | "account";
 
 const tierOrder: Tier[] = ["free", "seeker", "depth", "practitioner", "practice", "research"];
 
@@ -34,7 +34,8 @@ const nav: Array<[Section, string, string]> = [
   ["journal", "journal", "notes tied to chart context"],
   ["practice", "practice", "clients and consent"],
   ["reports", "reports", "export-ready interpretation"],
-  ["pricing", "pricing", "subscription access"]
+  ["pricing", "pricing", "subscription access"],
+  ["account", "account", "sign in and workspace access"]
 ];
 
 const defaultProfile: BirthProfile = {
@@ -64,6 +65,8 @@ export default function DreamLogicWorkspace() {
   const [tier, setTier] = useState<Tier>("seeker");
   const [journal, setJournal] = useState("moon notes: watch emotional pacing before interpretation.");
   const [clientName, setClientName] = useState("consultation client");
+  const [email, setEmail] = useState("reader@dreamlogic.app");
+  const [accountNotice, setAccountNotice] = useState("charts, notes, clients, and reports stay attached to this workspace.");
 
   const placements = useMemo(() => calculatePlacements(profile), [profile]);
   const elementBalance = useMemo(() => summarize(placements, "element"), [placements]);
@@ -78,10 +81,13 @@ export default function DreamLogicWorkspace() {
           <img src="/brand/logomain.svg" alt="dream logic" />
         </div>
         <div className="account-card">
-          <p>signed in</p>
+          <p>workspace</p>
           <strong>{profile.name}</strong>
           <span>{tierDetails[tier].detail}</span>
-          <a href={landingUrl}>landing site</a>
+          <div className="account-links">
+            <a href={landingUrl}>landing site</a>
+            <button onClick={() => setSection("account")}>account</button>
+          </div>
         </div>
         <nav aria-label="workspace">
           {nav.map(([key, label, detail]) => (
@@ -99,9 +105,18 @@ export default function DreamLogicWorkspace() {
             <p>astrology workspace</p>
             <h1>{nav.find(([key]) => key === section)?.[1]}</h1>
           </div>
-          <div className="mode-switch" aria-label="reading mode">
-            <button className={mode === "beginner" ? "selected" : ""} onClick={() => setMode("beginner")}>beginner</button>
-            <button className={mode === "expert" ? "selected" : ""} onClick={() => setMode("expert")}>expert</button>
+          <div className="top-actions">
+            <a href={landingUrl}>landing</a>
+            <button onClick={() => setSection("pricing")}>pricing</button>
+            <details className="app-menu">
+              <summary>menu</summary>
+              {nav.map(([key, label]) => <button key={key} onClick={() => setSection(key)}>{label}</button>)}
+              <a href={landingUrl}>landing site</a>
+            </details>
+            <div className="mode-switch" aria-label="reading mode">
+              <button className={mode === "beginner" ? "selected" : ""} onClick={() => setMode("beginner")}>beginner</button>
+              <button className={mode === "expert" ? "selected" : ""} onClick={() => setMode("expert")}>expert</button>
+            </div>
           </div>
         </header>
 
@@ -123,7 +138,7 @@ export default function DreamLogicWorkspace() {
             <article>
               <p className="kicker">next useful read</p>
               <h2>{lowercase(topPlacement.body)} in {lowercase(topPlacement.sign)}</h2>
-              <p>{isBeginner ? "start with the placement that changes the tone of the report, then connect it to element and modality balance." : "use the leading placement as the report angle, then confirm it against balance and timing."}</p>
+              <p>{isBeginner ? "start with one placement, then read it beside element balance and modality balance so the chart feels understandable instead of scattered." : "use the leading placement as the report angle, then confirm it against balance and timing."}</p>
             </article>
           </div>
         )}
@@ -225,6 +240,24 @@ export default function DreamLogicWorkspace() {
                 <button onClick={() => setTier(name)}>{tier === name ? "current plan" : "choose plan"}</button>
               </article>
             ))}
+          </div>
+        )}
+
+        {section === "account" && (
+          <div className="screen-grid">
+            <article className="form-card">
+              <p className="kicker">account access</p>
+              <label>email<input value={email} onChange={(event) => setEmail(event.target.value.toLowerCase())} /></label>
+              <label>password<input type="password" placeholder="password" /></label>
+              <button className="primary-button" onClick={() => setAccountNotice(`access checked for ${email.toLowerCase()}`)}>continue</button>
+              <p className="note">{accountNotice}</p>
+            </article>
+            <article>
+              <p className="kicker">current access</p>
+              <h2>{tier}</h2>
+              <p>{tierDetails[tier].detail}</p>
+              <button className="link-button" onClick={() => setSection("pricing")}>change plan</button>
+            </article>
           </div>
         )}
 

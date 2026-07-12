@@ -92,7 +92,8 @@ article,
 
 .account-card strong,
 .account-card span,
-.account-card a {
+.account-card a,
+.account-card button {
   display: block;
 }
 
@@ -102,6 +103,7 @@ article,
 
 .account-card span,
 .account-card a,
+.account-card button,
 p,
 small,
 li {
@@ -109,9 +111,20 @@ li {
   line-height: 1.55;
 }
 
-.account-card a {
+.account-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.account-card a,
+.account-card button {
   margin-top: 10px;
   color: var(--blue);
+  background: transparent;
+  border: 0;
+  padding: 0;
   font-weight: 850;
   text-decoration: none;
 }
@@ -123,6 +136,11 @@ nav {
 
 nav button,
 .mode-switch button,
+.top-actions > a,
+.top-actions > button,
+.app-menu summary,
+.app-menu button,
+.app-menu a,
 .actions button,
 .report-strip button,
 .tier button,
@@ -159,6 +177,48 @@ nav button.active,
   border-bottom: 1px solid var(--faint);
   padding-bottom: 18px;
   margin-bottom: 18px;
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.top-actions > a,
+.top-actions > button {
+  border-color: var(--faint);
+  min-height: 43px;
+  text-decoration: none;
+}
+
+.app-menu {
+  position: relative;
+}
+
+.app-menu summary {
+  min-height: 43px;
+  color: var(--gold);
+  cursor: pointer;
+}
+
+.app-menu[open] {
+  z-index: 5;
+}
+
+.app-menu[open] button,
+.app-menu[open] a {
+  display: block;
+  min-width: 180px;
+  border-color: var(--faint);
+  background: rgba(29,29,30,.98);
+  text-decoration: none;
+}
+
+.app-menu[open] summary {
+  margin-bottom: 6px;
 }
 
 h1, h2, h3, p {
@@ -218,7 +278,8 @@ article {
 .actions button,
 .report-strip button,
 .tier button,
-.primary-button {
+.primary-button,
+.link-button {
   border-color: var(--faint);
   min-height: 48px;
 }
@@ -229,6 +290,12 @@ article {
   border-color: rgba(212,167,44,.62);
   background: var(--gold);
   color: #090909;
+}
+
+.link-button {
+  margin-top: 12px;
+  background: transparent;
+  color: var(--blue);
 }
 
 .form-card,
@@ -403,6 +470,10 @@ textarea {
   .mode-switch,
   nav {
     grid-template-columns: 1fr;
+  }
+
+  .top-actions {
+    justify-content: flex-start;
   }
 
   .mode-switch button {
