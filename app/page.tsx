@@ -7,13 +7,13 @@ type Tier = "free" | "seeker" | "depth" | "practitioner" | "practice" | "researc
 type Mode = "beginner" | "expert";
 type Section = "home" | "birth" | "chart" | "timing" | "journal" | "practice" | "reports" | "plans" | "account";
 
-const tiers: Array<[Tier, string, string, string[]]> = [
-  ["free", "$0", "one chart with simple explanations", ["one birth profile", "basic placements", "glossary"]],
-  ["seeker", "$9/mo", "personal chart work", ["multiple charts", "journal links", "timing notes"]],
-  ["depth", "$19/mo", "deeper interpretation", ["returns", "synastry notes", "advanced timing"]],
-  ["practitioner", "$39/mo", "client-ready workflow", ["client records", "private notes", "exportable reports"]],
-  ["practice", "$89/mo", "team workspace", ["shared clients", "consent records", "practice overview"]],
-  ["research", "$149/mo", "bulk research tools", ["bulk calculations", "csv exports", "datasets"]]
+const tiers: Array<[Tier, string, string, string, string[]]> = [
+  ["free", "$0", "start", "1 chart", ["birth profile", "placements", "element balance", "modality balance", "beginner meanings"]],
+  ["seeker", "$9/mo", "personal", "10 charts", ["saved profiles", "journal links", "monthly timing", "relationship notes", "basic reports"]],
+  ["depth", "$19/mo", "deep work", "50 charts", ["returns", "advanced timing", "chart collections", "longer interpretation", "comparison work"]],
+  ["practitioner", "$39/mo", "client work", "100 clients", ["client records", "consent", "private notes", "report export", "session prep"]],
+  ["practice", "$89/mo", "team", "5 seats", ["shared clients", "team records", "practice overview", "support workflow", "role access"]],
+  ["research", "$149/mo", "research", "bulk", ["bulk charts", "csv exports", "datasets", "research notebooks", "method notes"]]
 ];
 
 const nav: Array<[Section, string]> = [
@@ -29,11 +29,20 @@ const nav: Array<[Section, string]> = [
 ];
 
 const glossary = [
-  ["element balance", "fire, earth, air, and water show the chart's dominant style of expression."],
-  ["modality balance", "cardinal, fixed, and mutable show how the chart starts, holds, and adapts."],
-  ["retrograde", "a planet read as revisiting, internalizing, or reviewing its themes."],
-  ["time certainty", "how much the birth time can be trusted before reading time-sensitive details."]
+  ["element balance", "fire, earth, air, and water show what kind of energy repeats most."],
+  ["modality balance", "cardinal, fixed, and mutable show how that energy moves."],
+  ["retrograde", "a planet marked for review, return, or internal emphasis."],
+  ["time certainty", "how much the birth time can be trusted before reading timing details."]
 ];
+
+const guideText: Record<string, string> = {
+  "element balance": "element balance counts fire, earth, air, and water across the main placements so the repeated tone of the chart is clear.",
+  "modality balance": "modality balance counts cardinal, fixed, and mutable placements. it helps explain whether the chart starts, sustains, or adapts energy most often.",
+  placements: "placements are the planet, sign, degree, element, modality, and retrograde status. this is the raw chart language before interpretation.",
+  retrograde: "retrograde marks planets whose motion is read as review, return, internal emphasis, or delayed expression.",
+  plans: "plans are separated by actual workflow: number of charts, timing depth, reports, client records, team seats, and research export.",
+  "time certainty": "time certainty protects the reading. if the time is unknown, the app keeps timing-sensitive details separated."
+};
 
 const defaultProfile: BirthProfile = {
   name: "primary chart",
@@ -60,12 +69,14 @@ export default function DreamLogicWorkspace() {
   const [section, setSection] = useState<Section>("home");
   const [mode, setMode] = useState<Mode>("beginner");
   const [tier, setTier] = useState<Tier>("free");
-  const [journal, setJournal] = useState("moon notes: check emotional pacing before report language.");
+  const [journal, setJournal] = useState("moon notes: keep the emotional read precise before adding it to the report.");
   const [clientName, setClientName] = useState("consultation client");
+  const [clients, setClients] = useState(["consultation client"]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [notice, setNotice] = useState("sign in or create an account to keep charts, notes, clients, and reports.");
+  const [notice, setNotice] = useState("sign in or create an account to save charts, notes, clients, and reports.");
   const [loading, setLoading] = useState("");
+  const [guide, setGuide] = useState("plans");
 
   const placements = useMemo(() => calculatePlacements(profile), [profile]);
   const elementBalance = useMemo(() => summarize(placements, "element"), [placements]);
@@ -111,6 +122,36 @@ export default function DreamLogicWorkspace() {
     }
   };
 
+  const saveClient = () => {
+    const next = lower(clientName.trim());
+    if (!next) return;
+    setClients((all) => Array.from(new Set([next, ...all])));
+    setNotice(`${next} saved to client records.`);
+  };
+
+  const downloadReport = () => {
+    const lines = [
+      "dream logic report",
+      "",
+      `chart: ${profile.name}`,
+      `birth: ${profile.birthDate} / ${profile.birthTime} / ${profile.locationLabel}`,
+      `time certainty: ${profile.birthTimeCertainty}`,
+      "",
+      "placements",
+      ...placements.map((placement) => `${lower(placement.body)}: ${placement.degree} deg ${placement.minute}' ${lower(placement.sign)}${placement.retrograde ? " / rx" : ""} / ${lower(placement.element)} / ${lower(placement.modality)}`),
+      "",
+      "journal",
+      journal
+    ];
+    const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${profile.name.replace(/\s+/g, "-")}-dream-logic-report.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <main className="app">
       <aside className="rail">
@@ -154,12 +195,12 @@ export default function DreamLogicWorkspace() {
               </div>
             </article>
             <article>
-              <p>next read</p>
+              <p>focus</p>
               <h2>{lower(leadPlacement.body)} in {lower(leadPlacement.sign)}</h2>
-              <span>{mode === "beginner" ? "read one placement, then compare it with element and modality balance." : "use the lead placement as the report angle and confirm with balance and timing."}</span>
+              <span>{mode === "beginner" ? "start here, then check element and modality balance." : "use this as the lead angle, then verify with balance and timing."}</span>
             </article>
-            <Balance title="element balance" items={elementBalance} />
-            <Balance title="modality balance" items={modalityBalance} />
+            <Balance title="element balance" items={elementBalance} onGuide={() => setGuide("element balance")} />
+            <Balance title="modality balance" items={modalityBalance} onGuide={() => setGuide("modality balance")} />
           </div>
         )}
 
@@ -179,16 +220,16 @@ export default function DreamLogicWorkspace() {
               </select></label>
               <label className="wide">place<input value={profile.locationLabel} onChange={(event) => setProfile({ ...profile, locationLabel: lower(event.target.value) })} /></label>
             </div>
-            {mode === "beginner" && <span className="note">unknown time uses noon and keeps time-sensitive interpretation separate.</span>}
+            {mode === "beginner" && <button className="note help-button" onClick={() => setGuide("time certainty")}>unknown time uses noon. timing-sensitive details stay separated.</button>}
           </article>
         )}
 
         {section === "chart" && (
           <div className="pane-grid">
-            <Balance title="element balance" items={elementBalance} help="what the chart leans on most." />
-            <Balance title="modality balance" items={modalityBalance} help="how the chart starts, holds, and adapts." />
+            <Balance title="element balance" items={elementBalance} help="the repeated energy in the chart." onGuide={() => setGuide("element balance")} />
+            <Balance title="modality balance" items={modalityBalance} help="the way that energy moves." onGuide={() => setGuide("modality balance")} />
             <article className="wide-card">
-              <p>placements</p>
+              <div className="card-title"><p>placements</p><button onClick={() => setGuide("placements")}>what is this?</button></div>
               <div className="placement-grid">
                 {placements.map((placement) => (
                   <div className="placement" key={placement.body}>
@@ -203,16 +244,16 @@ export default function DreamLogicWorkspace() {
         )}
 
         {section === "timing" && <TaskGrid items={[
-          ["transits", "watch current movement against natal placements."],
-          ["calendar", "keep return dates, stations, and consultation windows."],
-          ["notes", "separate timing notes from natal interpretation."]
+          ["transits", "compare current movement with natal placements."],
+          ["calendar", "save return dates, stations, and consultation windows."],
+          ["notes", "keep timing notes separate from natal meaning."]
         ]} />}
 
         {section === "journal" && (
           <article className="form-pane">
             <p>journal</p>
             <textarea value={journal} onChange={(event) => setJournal(lower(event.target.value))} />
-            <span className="note">journal text stays private until you add it to a report.</span>
+            <span className="note">journal text stays private until you choose to use it.</span>
           </article>
         )}
 
@@ -222,11 +263,17 @@ export default function DreamLogicWorkspace() {
               <p>client</p>
               <label>client name<input value={clientName} onChange={(event) => setClientName(lower(event.target.value))} /></label>
               <label>client email<input placeholder="client@example.com" /></label>
-              <button>save client</button>
+              <button onClick={saveClient}>save client</button>
+            </article>
+            <article>
+              <p>saved clients</p>
+              <div className="client-list">
+                {clients.map((client) => <span key={client}>{client}</span>)}
+              </div>
             </article>
             <TaskGrid items={[
-              ["consent", "keep client-visible and private practitioner notes separate."],
-              ["prep", "build a reading path from chart, timing, journal, and report sections."]
+              ["consent", "separate client-visible notes from private notes."],
+              ["prep", "move from chart to timing to notes to report."]
             ]} />
           </div>
         )}
@@ -235,24 +282,31 @@ export default function DreamLogicWorkspace() {
           <article className="report">
             <p>report</p>
             <h2>{profile.name}</h2>
-            <span>{placements.length} placements, {elementBalance[0]?.[0]} emphasis, {modalityBalance[0]?.[0]} modality lead, and saved notes ready for report structure.</span>
+            <span>{placements.length} placements, {elementBalance[0]?.[0]} emphasis, {modalityBalance[0]?.[0]} modality lead, and saved notes ready.</span>
             <div className="paper">
               <img src="/brand/fulllitelogo.svg" alt="dream logic astrology suite" />
               <h3>primary chart</h3>
-              <p>{mode === "beginner" ? "plain-language meanings stay attached to technical sections." : "concise interpretation-forward export."}</p>
+              <p>{mode === "beginner" ? "meanings stay beside the technical sections." : "shorter export for experienced readers."}</p>
+              <div className="report-lines">
+                <span>{leadPlacement ? `${lower(leadPlacement.body)} in ${lower(leadPlacement.sign)}` : "chart lead unavailable"}</span>
+                <span>{elementBalance[0]?.[0]} emphasis</span>
+                <span>{modalityBalance[0]?.[0]} modality lead</span>
+              </div>
             </div>
+            <button onClick={downloadReport}>download report</button>
           </article>
         )}
 
         {section === "plans" && (
           <div className="plans">
-            {tiers.map(([name, price, detail, features]) => (
+            {tiers.map(([name, price, label, limit, features]) => (
               <article className={tier === name ? "chosen" : ""} key={name}>
                 <p>{name}</p>
                 <h2>{price}</h2>
-                <span>{detail}</span>
+                <span>{label} / {limit}</span>
                 <ul>{features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
-                <button onClick={() => name === "free" ? setTier("free") : checkout(name)} disabled={loading === name}>{loading === name ? "opening..." : name === "free" ? "use free" : "subscribe"}</button>
+                <button className="plain-button" onClick={() => setGuide("plans")}>why this plan?</button>
+                <button onClick={() => name === "free" ? setTier("free") : checkout(name)} disabled={loading === name}>{loading === name ? "opening..." : name === "free" ? "try free" : "subscribe"}</button>
               </article>
             ))}
           </div>
@@ -273,7 +327,7 @@ export default function DreamLogicWorkspace() {
             <article>
               <p>current plan</p>
               <h2>{tier}</h2>
-              <span>{tiers.find(([name]) => name === tier)?.[2]}</span>
+              <span>{tiers.find(([name]) => name === tier)?.[3]}</span>
               <button onClick={() => setSection("plans")}>manage plan</button>
             </article>
           </div>
@@ -283,6 +337,17 @@ export default function DreamLogicWorkspace() {
           <section className="meaning-bar">
             {glossary.map(([term, meaning]) => <article key={term}><strong>{term}</strong><span>{meaning}</span></article>)}
           </section>
+        )}
+
+        {mode === "beginner" && (
+          <aside className="guide-panel" aria-live="polite">
+            <div>
+              <p>guide</p>
+              <h2>{guide}</h2>
+              <span>{guideText[guide]}</span>
+            </div>
+            <button onClick={() => setMode("expert")}>hide guide</button>
+          </aside>
         )}
       </section>
 
@@ -294,10 +359,13 @@ export default function DreamLogicWorkspace() {
   );
 }
 
-function Balance({ title, items, help }: { title: string; items: Array<[string, number]>; help?: string }) {
+function Balance({ title, items, help, onGuide }: { title: string; items: Array<[string, number]>; help?: string; onGuide?: () => void }) {
   return (
     <article>
-      <p>{title}</p>
+      <div className="card-title">
+        <p>{title}</p>
+        {onGuide && <button onClick={onGuide}>explain</button>}
+      </div>
       {help && <span>{help}</span>}
       <div className="balance">
         {items.map(([name, count]) => <span key={name}><strong>{count}</strong>{name}</span>)}
