@@ -28,6 +28,14 @@ const nav: Array<[Section, string]> = [
   ["account", "account"]
 ];
 
+const mobilePrimaryNav: Array<[Section, string]> = [
+  ["home", "today"],
+  ["birth", "birth"],
+  ["chart", "chart"],
+  ["journal", "notes"],
+  ["reports", "report"]
+];
+
 const glossary = [
   ["element balance", "fire, earth, air, and water show what kind of energy repeats most."],
   ["modality balance", "cardinal, fixed, and mutable show how that energy moves."],
@@ -177,6 +185,12 @@ export default function DreamLogicWorkspace() {
             <a href={landingUrl}>landing</a>
             <button onClick={() => setSection("account")}>sign in</button>
           </div>
+          <label className="mobile-switch">
+            <span>go to</span>
+            <select value={section} onChange={(event) => setSection(event.target.value as Section)}>
+              {nav.map(([key, label]) => <option value={key} key={key}>{label}</option>)}
+            </select>
+          </label>
         </header>
 
         {section === "home" && (
@@ -352,8 +366,7 @@ export default function DreamLogicWorkspace() {
       </section>
 
       <nav className="mobile-tabs" aria-label="mobile workspace">
-        {nav.slice(0, 5).map(([key, label]) => <button className={section === key ? "on" : ""} key={key} onClick={() => setSection(key)}>{label}</button>)}
-        <button className={section === "account" ? "on" : ""} onClick={() => setSection("account")}>account</button>
+        {mobilePrimaryNav.map(([key, label]) => <button className={section === key ? "on" : ""} key={key} onClick={() => setSection(key)}>{label}</button>)}
       </nav>
     </main>
   );
