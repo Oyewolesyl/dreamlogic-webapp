@@ -47,6 +47,8 @@ production build:
 npm run build
 ```
 
+the app includes vercel analytics through `@vercel/analytics`.
+
 ## environment variables
 
 set this in vercel after the landing page has its production URL:

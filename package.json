@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "astronomy-engine": "^2.1.19",
     "next": "15.5.20",
     "react": "19.1.1",
