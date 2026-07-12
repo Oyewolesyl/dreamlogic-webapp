@@ -63,6 +63,17 @@ if it is not set, the app falls back to:
 https://dreamlogic-landingpage.vercel.app
 ```
 
+## full backend setup
+
+read `BACKEND_SETUP.md` for the complete beginner setup:
+
+- supabase project and database.
+- stripe secret key.
+- stripe products and price ids.
+- stripe webhook secret.
+- vercel environment variables.
+- what still needs private credentials before live account/payment persistence works.
+
 ## product structure
 
 the web app should stay focused on the workspace experience. marketing copy, investor content, and public pitch material belong in the landing repo.
