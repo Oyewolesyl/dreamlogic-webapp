@@ -182,7 +182,7 @@ export default function DreamLogicWorkspace() {
         {section === "home" && (
           <div className="pane-grid">
             <article className="active-chart">
-              <img src="/brand/fulllitelogo.svg" alt="dream logic astrology suite" />
+              <img src="/brand/logomain.svg" alt="dream logic" />
               <div>
                 <p>active chart</p>
                 <h2>{profile.name}</h2>
