@@ -5,37 +5,34 @@ import { BirthProfile, Placement, calculatePlacements } from "./chart";
 
 type Tier = "free" | "seeker" | "depth" | "practitioner" | "practice" | "research";
 type Mode = "beginner" | "expert";
-type Section = "today" | "birth" | "chart" | "timing" | "journal" | "practice" | "reports" | "pricing" | "account";
+type Section = "home" | "birth" | "chart" | "timing" | "journal" | "practice" | "reports" | "plans" | "account";
 
-const tierOrder: Tier[] = ["free", "seeker", "depth", "practitioner", "practice", "research"];
-
-const tierDetails: Record<Tier, { price: string; detail: string; features: string[] }> = {
-  free: { price: "$0", detail: "one saved chart with plain explanations", features: ["one birth profile", "basic placements", "beginner glossary"] },
-  seeker: { price: "$9", detail: "personal chart work and timing notes", features: ["multiple profiles", "journal links", "monthly transits"] },
-  depth: { price: "$19", detail: "deeper timing, returns, and comparison", features: ["solar return prep", "synastry notes", "advanced timing"] },
-  practitioner: { price: "$39", detail: "client-ready work for one astrologer", features: ["client records", "private notes", "exportable reports"] },
-  practice: { price: "$89", detail: "shared workflows for teams", features: ["team access", "consent records", "practice reporting"] },
-  research: { price: "$149", detail: "bulk charts and structured datasets", features: ["bulk calculation", "csv exports", "research notebooks"] }
-};
-
-const glossary = [
-  ["natal chart", "a map of planetary positions for a specific birth date, time, and place."],
-  ["element balance", "how much fire, earth, air, and water appear across the main placements."],
-  ["modality balance", "how much cardinal, fixed, and mutable energy appears across the main placements."],
-  ["retrograde", "a planet appearing to move backward from earth, often read as internalized or revisited themes."],
-  ["time certainty", "how reliable the birth time is; unknown times use noon and keep time-sensitive meaning separated."]
+const tiers: Array<[Tier, string, string, string[]]> = [
+  ["free", "$0", "one chart with simple explanations", ["one birth profile", "basic placements", "glossary"]],
+  ["seeker", "$9/mo", "personal chart work", ["multiple charts", "journal links", "timing notes"]],
+  ["depth", "$19/mo", "deeper interpretation", ["returns", "synastry notes", "advanced timing"]],
+  ["practitioner", "$39/mo", "client-ready workflow", ["client records", "private notes", "exportable reports"]],
+  ["practice", "$89/mo", "team workspace", ["shared clients", "consent records", "practice overview"]],
+  ["research", "$149/mo", "bulk research tools", ["bulk calculations", "csv exports", "datasets"]]
 ];
 
-const nav: Array<[Section, string, string]> = [
-  ["today", "today", "current chart and next action"],
-  ["birth", "birth profile", "date, time, place, certainty"],
-  ["chart", "chart studio", "placements and balances"],
-  ["timing", "timing", "transits and planning"],
-  ["journal", "journal", "notes tied to chart context"],
-  ["practice", "practice", "clients and consent"],
-  ["reports", "reports", "export-ready interpretation"],
-  ["pricing", "pricing", "subscription access"],
-  ["account", "account", "sign in and workspace access"]
+const nav: Array<[Section, string]> = [
+  ["home", "today"],
+  ["birth", "birth"],
+  ["chart", "chart"],
+  ["timing", "timing"],
+  ["journal", "journal"],
+  ["practice", "clients"],
+  ["reports", "reports"],
+  ["plans", "plans"],
+  ["account", "account"]
+];
+
+const glossary = [
+  ["element balance", "fire, earth, air, and water show the chart's dominant style of expression."],
+  ["modality balance", "cardinal, fixed, and mutable show how the chart starts, holds, and adapts."],
+  ["retrograde", "a planet read as revisiting, internalizing, or reviewing its themes."],
+  ["time certainty", "how much the birth time can be trusted before reading time-sensitive details."]
 ];
 
 const defaultProfile: BirthProfile = {
@@ -46,11 +43,11 @@ const defaultProfile: BirthProfile = {
   locationLabel: "lagos, nigeria"
 };
 
-const lowercase = (value: string) => value.toLowerCase();
+const lower = (value: string) => value.toLowerCase();
 
 const summarize = (placements: Placement[], field: "element" | "modality") => {
   const counts = placements.reduce<Record<string, number>>((all, placement) => {
-    const key = lowercase(placement[field]);
+    const key = lower(placement[field]);
     all[key] = (all[key] ?? 0) + 1;
     return all;
   }, {});
@@ -60,121 +57,144 @@ const summarize = (placements: Placement[], field: "element" | "modality") => {
 export default function DreamLogicWorkspace() {
   const landingUrl = process.env.NEXT_PUBLIC_LANDING_URL ?? "https://dreamlogic-landingpage.vercel.app";
   const [profile, setProfile] = useState<BirthProfile>(defaultProfile);
-  const [section, setSection] = useState<Section>("today");
+  const [section, setSection] = useState<Section>("home");
   const [mode, setMode] = useState<Mode>("beginner");
-  const [tier, setTier] = useState<Tier>("seeker");
-  const [journal, setJournal] = useState("moon notes: watch emotional pacing before interpretation.");
+  const [tier, setTier] = useState<Tier>("free");
+  const [journal, setJournal] = useState("moon notes: check emotional pacing before report language.");
   const [clientName, setClientName] = useState("consultation client");
-  const [email, setEmail] = useState("reader@dreamlogic.app");
-  const [accountNotice, setAccountNotice] = useState("charts, notes, clients, and reports stay attached to this workspace.");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [notice, setNotice] = useState("sign in or create an account to keep charts, notes, clients, and reports.");
+  const [loading, setLoading] = useState("");
 
   const placements = useMemo(() => calculatePlacements(profile), [profile]);
   const elementBalance = useMemo(() => summarize(placements, "element"), [placements]);
   const modalityBalance = useMemo(() => summarize(placements, "modality"), [placements]);
-  const topPlacement = placements[1] ?? placements[0];
-  const isBeginner = mode === "beginner";
+  const leadPlacement = placements[1] ?? placements[0];
+  const activeNav = nav.find(([key]) => key === section)?.[1] ?? "today";
+
+  const auth = async (intent: "signup" | "login") => {
+    setLoading(intent);
+    setNotice("checking account...");
+    try {
+      const response = await fetch("/api/auth/access", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ intent, email, password })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "account request failed");
+      setNotice(data.message);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "account request failed");
+    } finally {
+      setLoading("");
+    }
+  };
+
+  const checkout = async (plan: Tier) => {
+    setLoading(plan);
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ plan, email })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "checkout unavailable");
+      window.location.href = data.url;
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "checkout unavailable");
+      setSection("account");
+    } finally {
+      setLoading("");
+    }
+  };
 
   return (
-    <main className="workspace">
-      <aside className="sidebar">
-        <div className="brand-lockup">
+    <main className="app">
+      <aside className="rail">
+        <a className="logo" href={landingUrl}>
           <img src="/brand/logomain.svg" alt="dream logic" />
-        </div>
-        <div className="account-card">
-          <p>workspace</p>
-          <strong>{profile.name}</strong>
-          <span>{tierDetails[tier].detail}</span>
-          <div className="account-links">
-            <a href={landingUrl}>landing site</a>
-            <button onClick={() => setSection("account")}>account</button>
-          </div>
-        </div>
+        </a>
         <nav aria-label="workspace">
-          {nav.map(([key, label, detail]) => (
-            <button className={section === key ? "active" : ""} key={key} onClick={() => setSection(key)}>
-              <span>{label}</span>
-              <small>{detail}</small>
-            </button>
+          {nav.map(([key, label]) => (
+            <button className={section === key ? "on" : ""} key={key} onClick={() => setSection(key)}>{label}</button>
           ))}
         </nav>
       </aside>
 
-      <section className="main-panel">
-        <header className="topline">
+      <section className="work">
+        <header className="worktop">
           <div>
-            <p>astrology workspace</p>
-            <h1>{nav.find(([key]) => key === section)?.[1]}</h1>
+            <p>dream logic</p>
+            <h1>{activeNav}</h1>
           </div>
-          <div className="top-actions">
+          <div className="tools">
+            <button className={mode === "beginner" ? "on" : ""} onClick={() => setMode("beginner")}>beginner</button>
+            <button className={mode === "expert" ? "on" : ""} onClick={() => setMode("expert")}>expert</button>
             <a href={landingUrl}>landing</a>
-            <button onClick={() => setSection("pricing")}>pricing</button>
-            <details className="app-menu">
-              <summary>menu</summary>
-              {nav.map(([key, label]) => <button key={key} onClick={() => setSection(key)}>{label}</button>)}
-              <a href={landingUrl}>landing site</a>
-            </details>
-            <div className="mode-switch" aria-label="reading mode">
-              <button className={mode === "beginner" ? "selected" : ""} onClick={() => setMode("beginner")}>beginner</button>
-              <button className={mode === "expert" ? "selected" : ""} onClick={() => setMode("expert")}>expert</button>
-            </div>
+            <button onClick={() => setSection("account")}>sign in</button>
           </div>
         </header>
 
-        {section === "today" && (
-          <div className="screen-grid">
-            <article className="hero-card">
+        {section === "home" && (
+          <div className="pane-grid">
+            <article className="active-chart">
               <img src="/brand/fulllitelogo.svg" alt="dream logic astrology suite" />
               <div>
                 <p>active chart</p>
                 <h2>{profile.name}</h2>
                 <span>{profile.birthDate} / {profile.birthTime} / {profile.locationLabel}</span>
               </div>
-              <div className="actions">
+              <div className="button-row">
                 <button onClick={() => setSection("birth")}>edit birth data</button>
                 <button onClick={() => setSection("chart")}>open chart</button>
                 <button onClick={() => setSection("reports")}>prepare report</button>
               </div>
             </article>
             <article>
-              <p className="kicker">next useful read</p>
-              <h2>{lowercase(topPlacement.body)} in {lowercase(topPlacement.sign)}</h2>
-              <p>{isBeginner ? "start with one placement, then read it beside element balance and modality balance so the chart feels understandable instead of scattered." : "use the leading placement as the report angle, then confirm it against balance and timing."}</p>
+              <p>next read</p>
+              <h2>{lower(leadPlacement.body)} in {lower(leadPlacement.sign)}</h2>
+              <span>{mode === "beginner" ? "read one placement, then compare it with element and modality balance." : "use the lead placement as the report angle and confirm with balance and timing."}</span>
             </article>
+            <Balance title="element balance" items={elementBalance} />
+            <Balance title="modality balance" items={modalityBalance} />
           </div>
         )}
 
         {section === "birth" && (
-          <article className="form-card">
-            <p className="kicker">birth data</p>
-            <div className="form-grid">
-              <label>profile name<input value={profile.name} onChange={(event) => setProfile({ ...profile, name: event.target.value.toLowerCase() })} /></label>
-              <label>birth date<input type="date" value={profile.birthDate} onChange={(event) => setProfile({ ...profile, birthDate: event.target.value })} /></label>
-              <label>birth time<input type="time" value={profile.birthTime} onChange={(event) => setProfile({ ...profile, birthTime: event.target.value })} /></label>
-              <label>time certainty<select value={profile.birthTimeCertainty} onChange={(event) => setProfile({ ...profile, birthTimeCertainty: event.target.value as BirthProfile["birthTimeCertainty"] })}>
-                <option value="official_recorded">official recorded time</option>
+          <article className="form-pane">
+            <p>birth profile</p>
+            <div className="fields">
+              <label>name<input value={profile.name} onChange={(event) => setProfile({ ...profile, name: lower(event.target.value) })} /></label>
+              <label>date<input type="date" value={profile.birthDate} onChange={(event) => setProfile({ ...profile, birthDate: event.target.value })} /></label>
+              <label>time<input type="time" value={profile.birthTime} onChange={(event) => setProfile({ ...profile, birthTime: event.target.value })} /></label>
+              <label>certainty<select value={profile.birthTimeCertainty} onChange={(event) => setProfile({ ...profile, birthTimeCertainty: event.target.value as BirthProfile["birthTimeCertainty"] })}>
+                <option value="official_recorded">official recorded</option>
                 <option value="family_reported">family reported</option>
                 <option value="approximate">approximate</option>
                 <option value="rectified">rectified</option>
                 <option value="unknown">unknown</option>
               </select></label>
-              <label className="wide">birth location<input value={profile.locationLabel} onChange={(event) => setProfile({ ...profile, locationLabel: event.target.value.toLowerCase() })} /></label>
+              <label className="wide">place<input value={profile.locationLabel} onChange={(event) => setProfile({ ...profile, locationLabel: lower(event.target.value) })} /></label>
             </div>
-            {isBeginner && <p className="note">unknown birth times calculate from noon and keep moon, houses, and timing-sensitive interpretation clearly marked.</p>}
+            {mode === "beginner" && <span className="note">unknown time uses noon and keeps time-sensitive interpretation separate.</span>}
           </article>
         )}
 
         {section === "chart" && (
-          <div className="screen-grid">
-            <Balance title="element balance" items={elementBalance} help={isBeginner ? "elements describe the style of expression across the chart." : undefined} />
-            <Balance title="modality balance" items={modalityBalance} help={isBeginner ? "modalities describe how the chart initiates, holds, and adapts energy." : undefined} />
+          <div className="pane-grid">
+            <Balance title="element balance" items={elementBalance} help="what the chart leans on most." />
+            <Balance title="modality balance" items={modalityBalance} help="how the chart starts, holds, and adapts." />
             <article className="wide-card">
-              <p className="kicker">placements</p>
-              <div className="placement-list">
+              <p>placements</p>
+              <div className="placement-grid">
                 {placements.map((placement) => (
                   <div className="placement" key={placement.body}>
-                    <strong>{lowercase(placement.body)}</strong>
-                    <span>{placement.degree} deg {placement.minute}' {lowercase(placement.sign)}{placement.retrograde ? " / rx" : ""}</span>
-                    <small>{lowercase(placement.element)} / {lowercase(placement.modality)}</small>
+                    <strong>{lower(placement.body)}</strong>
+                    <span>{placement.degree} deg {placement.minute}' {lower(placement.sign)}{placement.retrograde ? " / rx" : ""}</span>
+                    <small>{lower(placement.element)} / {lower(placement.modality)}</small>
                   </div>
                 ))}
               </div>
@@ -182,94 +202,94 @@ export default function DreamLogicWorkspace() {
           </div>
         )}
 
-        {section === "timing" && (
-          <div className="screen-grid">
-            <Task title="transit watch" body="track current motion against natal placements without mixing it into the natal report." />
-            <Task title="calendar planning" body="save consultation windows, return dates, and follow-up prompts." />
-            <Task title="station notes" body="mark retrograde station periods and keep interpretation separate from natal meaning." />
-          </div>
-        )}
+        {section === "timing" && <TaskGrid items={[
+          ["transits", "watch current movement against natal placements."],
+          ["calendar", "keep return dates, stations, and consultation windows."],
+          ["notes", "separate timing notes from natal interpretation."]
+        ]} />}
 
         {section === "journal" && (
-          <article className="form-card">
-            <p className="kicker">private journal</p>
-            <textarea value={journal} onChange={(event) => setJournal(event.target.value.toLowerCase())} />
-            <p className="note">journal text stays private until you deliberately add it to a report.</p>
+          <article className="form-pane">
+            <p>journal</p>
+            <textarea value={journal} onChange={(event) => setJournal(lower(event.target.value))} />
+            <span className="note">journal text stays private until you add it to a report.</span>
           </article>
         )}
 
         {section === "practice" && (
-          <div className="screen-grid">
-            <article className="form-card">
-              <p className="kicker">client record</p>
-              <label>client name<input value={clientName} onChange={(event) => setClientName(event.target.value.toLowerCase())} /></label>
-              <label>email<input placeholder="client@example.com" /></label>
-              <button className="primary-button">save client</button>
+          <div className="pane-grid">
+            <article className="form-pane">
+              <p>client</p>
+              <label>client name<input value={clientName} onChange={(event) => setClientName(lower(event.target.value))} /></label>
+              <label>client email<input placeholder="client@example.com" /></label>
+              <button>save client</button>
             </article>
-            <Task title="consent" body="client-visible notes and practitioner-private notes remain separated before export." />
-            <Task title="session prep" body="build a clean consultation path from profile, timing, journal, and relationship work." />
+            <TaskGrid items={[
+              ["consent", "keep client-visible and private practitioner notes separate."],
+              ["prep", "build a reading path from chart, timing, journal, and report sections."]
+            ]} />
           </div>
         )}
 
         {section === "reports" && (
-          <article className="report-card">
-            <p className="kicker">report draft</p>
+          <article className="report">
+            <p>report</p>
             <h2>{profile.name}</h2>
-            <p>{placements.length} calculated placements, {elementBalance[0]?.[0]} emphasis, {modalityBalance[0]?.[0]} modality lead, saved journal context, and practitioner notes are ready for export.</p>
-            <div className="report-strip">
-              <button>birth profile</button>
-              <button>interpretation</button>
-              <button>practice notes</button>
-            </div>
-            <div className="paper-preview">
+            <span>{placements.length} placements, {elementBalance[0]?.[0]} emphasis, {modalityBalance[0]?.[0]} modality lead, and saved notes ready for report structure.</span>
+            <div className="paper">
               <img src="/brand/fulllitelogo.svg" alt="dream logic astrology suite" />
               <h3>primary chart</h3>
-              <p>{isBeginner ? "includes plain-language definitions before each technical section." : "keeps report concise and interpretation-forward."}</p>
+              <p>{mode === "beginner" ? "plain-language meanings stay attached to technical sections." : "concise interpretation-forward export."}</p>
             </div>
           </article>
         )}
 
-        {section === "pricing" && (
-          <div className="tier-grid">
-            {tierOrder.map((name) => (
-              <article className={tier === name ? "tier chosen" : "tier"} key={name}>
-                <p className="kicker">{name}</p>
-                <h2>{tierDetails[name].price}</h2>
-                <span>{tierDetails[name].detail}</span>
-                <ul>{tierDetails[name].features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
-                <button onClick={() => setTier(name)}>{tier === name ? "current plan" : "choose plan"}</button>
+        {section === "plans" && (
+          <div className="plans">
+            {tiers.map(([name, price, detail, features]) => (
+              <article className={tier === name ? "chosen" : ""} key={name}>
+                <p>{name}</p>
+                <h2>{price}</h2>
+                <span>{detail}</span>
+                <ul>{features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
+                <button onClick={() => name === "free" ? setTier("free") : checkout(name)} disabled={loading === name}>{loading === name ? "opening..." : name === "free" ? "use free" : "subscribe"}</button>
               </article>
             ))}
           </div>
         )}
 
         {section === "account" && (
-          <div className="screen-grid">
-            <article className="form-card">
-              <p className="kicker">account access</p>
-              <label>email<input value={email} onChange={(event) => setEmail(event.target.value.toLowerCase())} /></label>
-              <label>password<input type="password" placeholder="password" /></label>
-              <button className="primary-button" onClick={() => setAccountNotice(`access checked for ${email.toLowerCase()}`)}>continue</button>
-              <p className="note">{accountNotice}</p>
+          <div className="pane-grid">
+            <article className="form-pane">
+              <p>account</p>
+              <label>email<input value={email} onChange={(event) => setEmail(lower(event.target.value))} placeholder="you@example.com" /></label>
+              <label>password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="password" /></label>
+              <div className="button-row">
+                <button onClick={() => auth("login")} disabled={loading === "login"}>{loading === "login" ? "checking..." : "sign in"}</button>
+                <button onClick={() => auth("signup")} disabled={loading === "signup"}>{loading === "signup" ? "creating..." : "create account"}</button>
+              </div>
+              <span className="note">{notice}</span>
             </article>
             <article>
-              <p className="kicker">current access</p>
+              <p>current plan</p>
               <h2>{tier}</h2>
-              <p>{tierDetails[tier].detail}</p>
-              <button className="link-button" onClick={() => setSection("pricing")}>change plan</button>
+              <span>{tiers.find(([name]) => name === tier)?.[2]}</span>
+              <button onClick={() => setSection("plans")}>manage plan</button>
             </article>
           </div>
         )}
 
-        {isBeginner && section !== "pricing" && (
-          <section className="glossary">
-            <p className="kicker">quick meanings</p>
-            <div>
-              {glossary.map(([term, meaning]) => <article key={term}><strong>{term}</strong><span>{meaning}</span></article>)}
-            </div>
+        {mode === "beginner" && section !== "plans" && (
+          <section className="meaning-bar">
+            {glossary.map(([term, meaning]) => <article key={term}><strong>{term}</strong><span>{meaning}</span></article>)}
           </section>
         )}
       </section>
+
+      <nav className="mobile-tabs" aria-label="mobile workspace">
+        {nav.slice(0, 5).map(([key, label]) => <button className={section === key ? "on" : ""} key={key} onClick={() => setSection(key)}>{label}</button>)}
+        <button className={section === "account" ? "on" : ""} onClick={() => setSection("account")}>account</button>
+      </nav>
     </main>
   );
 }
@@ -277,20 +297,19 @@ export default function DreamLogicWorkspace() {
 function Balance({ title, items, help }: { title: string; items: Array<[string, number]>; help?: string }) {
   return (
     <article>
-      <p className="kicker">{title}</p>
-      {help && <p>{help}</p>}
-      <div className="balance-grid">
+      <p>{title}</p>
+      {help && <span>{help}</span>}
+      <div className="balance">
         {items.map(([name, count]) => <span key={name}><strong>{count}</strong>{name}</span>)}
       </div>
     </article>
   );
 }
 
-function Task({ title, body }: { title: string; body: string }) {
+function TaskGrid({ items }: { items: string[][] }) {
   return (
-    <article>
-      <p className="kicker">{title}</p>
-      <p>{body}</p>
-    </article>
+    <div className="pane-grid">
+      {items.map(([title, body]) => <article key={title}><p>{title}</p><span>{body}</span></article>)}
+    </div>
   );
 }

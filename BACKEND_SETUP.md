@@ -88,7 +88,17 @@ copy each stripe price id:
 price_...
 ```
 
-the app should map plan buttons to these price ids.
+add the price ids to the web app vercel project:
+
+```txt
+STRIPE_PRICE_SEEKER=price_your_seeker_price
+STRIPE_PRICE_DEPTH=price_your_depth_price
+STRIPE_PRICE_PRACTITIONER=price_your_practitioner_price
+STRIPE_PRICE_PRACTICE=price_your_practice_price
+STRIPE_PRICE_RESEARCH=price_your_research_price
+```
+
+the app checkout buttons use these variables.
 
 ## 6. stripe webhook
 
@@ -143,9 +153,8 @@ without your supabase and stripe values, the app can render the product experien
 
 after the keys are set, the remaining server work is:
 
-- create checkout session route.
-- create stripe webhook route.
-- write user profile and plan records to supabase.
+- connect saved chart/profile forms to supabase insert and update routes.
+- write verified stripe subscription status into the subscriptions table.
 - save birth profiles and chart snapshots.
 - save journal entries.
 - save client records.
