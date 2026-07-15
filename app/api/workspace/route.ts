@@ -107,8 +107,8 @@ export async function POST(request: NextRequest) {
   await context.supabase.from("audit_logs").insert({
     actor_profile_id: context.profileId,
     action: "workspace.saved",
-    entity_type: "workspace",
-    entity_id: birthProfileId.id,
+    target_table: "birth_profiles",
+    target_id: birthProfileId.id,
     metadata: { tier: payload.tier, placement_count: payload.placements?.length ?? 0 }
   });
 
@@ -161,7 +161,7 @@ async function saveChartSnapshot(context: Awaited<ReturnType<typeof getWorkspace
     .from("chart_snapshots")
     .insert({
       birth_profile_id: birthProfileId,
-      calculation_provider: "astronomy-engine",
+      provider: "astronomy-engine",
       provider_version: "runtime",
       resolver_version: "dreamlogic-webapp",
       settings: {
@@ -186,6 +186,7 @@ async function saveChartSnapshot(context: Awaited<ReturnType<typeof getWorkspace
       minute: placement.minute,
       longitude_decimal: placement.longitude ?? placement.degree + placement.minute / 60,
       house: null,
+      retrograde: placement.retrograde,
       is_retrograde: placement.retrograde,
       raw: placement
     }));
@@ -218,7 +219,7 @@ async function saveJournal(context: Awaited<ReturnType<typeof getWorkspaceContex
     entry_type: "reflection",
     title: `${payload.profile?.name ?? "chart"} notes`,
     body: payload.journal,
-    tags: ["workspace"],
+    linked_context: { source: "workspace", clients: payload.clients ?? [] },
     updated_at: new Date().toISOString()
   };
 
@@ -249,7 +250,8 @@ async function saveReport(context: Awaited<ReturnType<typeof getWorkspaceContext
       modality_balance: payload.modalityBalance,
       tier: payload.tier,
       mode: payload.mode
-    }
+    },
+    updated_at: new Date().toISOString()
   };
 
   const existing = await context.supabase
@@ -258,7 +260,7 @@ async function saveReport(context: Awaited<ReturnType<typeof getWorkspaceContext
     .eq("owner_profile_id", context.profileId)
     .eq("report_type", "natal")
     .eq("title", title)
-    .order("generated_at", { ascending: false })
+    .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 

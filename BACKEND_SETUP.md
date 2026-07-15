@@ -42,18 +42,31 @@ the production database should store:
 - subscription status.
 - event logs.
 
-run the migrations in this repo in order:
+if supabase is empty, run the migrations in this repo in order:
 
 ```txt
 supabase/migrations/202607120001_initial_foundation.sql
 supabase/migrations/202607150001_workspace_state.sql
+supabase/migrations/202607150002_backend_compatibility.sql
 ```
 
-run both in supabase sql editor.
+run them in supabase sql editor.
 
 the first migration creates the structured product tables.
 
 the second migration creates `workspace_states`, which lets the app restore the complete current workspace for a signed-in user.
+
+the third migration makes the live backend compatible with the finished web app by adding report title/body fields, chart minute/longitude fields, and the workspace restore table if it does not already exist.
+
+if you already pasted and ran the original schema in supabase, do not rerun `202607120001_initial_foundation.sql`.
+
+instead run only:
+
+```txt
+supabase/migrations/202607150002_backend_compatibility.sql
+```
+
+that upgrades the existing database without deleting your tables.
 
 ## 4. stripe secret key
 
