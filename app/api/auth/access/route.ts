@@ -29,10 +29,30 @@ export async function POST(request: NextRequest) {
       }, { onConflict: "auth_user_id" });
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       message: data.session ? "account created and signed in" : "account created. check email if confirmation is enabled.",
       userId: data.user?.id ?? null
     });
+
+    if (data.session) {
+      response.cookies.set("dl_access_token", data.session.access_token, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: true,
+        path: "/",
+        maxAge: data.session.expires_in
+      });
+
+      response.cookies.set("dl_refresh_token", data.session.refresh_token, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: true,
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30
+      });
+    }
+
+    return response;
   }
 
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });

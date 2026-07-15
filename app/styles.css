@@ -35,6 +35,7 @@ body {
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
+  overflow-x: hidden;
 }
 
 button,
@@ -138,6 +139,10 @@ strong {
   max-width: 1220px;
 }
 
+.mobile-logo {
+  display: none;
+}
+
 .worktop p,
 article > p,
 .card-title p,
@@ -168,6 +173,13 @@ h3 {
   margin: 14px 0 6px;
   font-size: 1.35rem;
   line-height: 1.05;
+  text-transform: lowercase;
+}
+
+h4 {
+  margin: 0 0 8px;
+  font-size: .92rem;
+  line-height: 1.15;
   text-transform: lowercase;
 }
 
@@ -436,17 +448,36 @@ textarea:focus {
   color: rgba(16, 16, 17, .72);
 }
 
-.report-lines {
+.report-sections {
   display: grid;
-  gap: 9px;
+  gap: 16px;
   margin-top: 16px;
 }
 
-.report-lines span {
+.report-sections section {
   border-top: 1px solid rgba(16, 16, 17, .18);
-  color: #101011;
-  padding-top: 9px;
-  font-weight: 850;
+  padding-top: 14px;
+}
+
+.report-sections h4 {
+  color: #ee1d2f;
+  font-weight: 900;
+}
+
+.report-sections p,
+.report-sections li {
+  color: rgba(16, 16, 17, .76);
+}
+
+.report-sections ul {
+  display: grid;
+  gap: 5px;
+  margin: 10px 0 0;
+  padding-left: 18px;
+}
+
+.report .button-row {
+  margin-top: 14px;
 }
 
 .plans {
@@ -566,7 +597,8 @@ textarea:focus {
     position: sticky;
     top: 0;
     z-index: 19;
-    grid-template-columns: 1fr;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
     margin: 0 -12px 14px;
     padding: 14px 12px 12px;
     border-bottom: 1px solid var(--line);
@@ -574,24 +606,57 @@ textarea:focus {
     backdrop-filter: blur(14px);
   }
 
+  .mobile-logo {
+    display: block;
+    grid-row: 1 / span 2;
+    width: 58px;
+  }
+
+  .mobile-logo img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .worktop > div:first-of-type p {
+    display: none;
+  }
+
+  .worktop h1 {
+    font-size: clamp(1.45rem, 7.4vw, 2.1rem);
+  }
+
   .tools {
     justify-content: flex-start;
+    grid-column: 1 / -1;
+  }
+
+  .tools a,
+  .tools button:last-child {
+    display: none;
+  }
+
+  .tools button {
+    flex: 1;
+    min-height: 32px;
+    padding: 0 10px;
   }
 
   .mobile-switch {
     display: grid;
-    gap: 7px;
+    grid-column: 1 / -1;
   }
 
   .mobile-switch span {
-    color: var(--gold);
-    font-size: .72rem;
-    font-weight: 900;
-    text-transform: lowercase;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
   }
 
   .mobile-switch select {
-    min-height: 46px;
+    min-height: 38px;
     border-color: rgba(143, 181, 245, .36);
     background: rgba(143, 181, 245, .08);
     color: var(--paper);
@@ -616,7 +681,7 @@ textarea:focus {
     position: fixed;
     left: 10px;
     right: 10px;
-    bottom: 10px;
+    bottom: max(10px, env(safe-area-inset-bottom));
     z-index: 20;
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -644,21 +709,18 @@ textarea:focus {
   .guide-panel {
     left: 10px;
     right: 10px;
-    bottom: 76px;
+    bottom: calc(76px + env(safe-area-inset-bottom));
     width: auto;
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 560px) {
-  .tools a,
-  .tools button {
-    flex: 1;
-    justify-content: center;
-    text-align: center;
+  .worktop {
+    gap: 10px;
   }
 
   .mobile-tabs button {
-    font-size: .78rem;
+    font-size: .74rem;
   }
 }

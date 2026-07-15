@@ -13,6 +13,7 @@ export type Placement = {
   sign: string;
   degree: number;
   minute: number;
+  longitude: number;
   element: string;
   modality: string;
   retrograde: boolean;
@@ -70,6 +71,6 @@ export const calculatePlacements = (profile: BirthProfile): Placement[] => {
     const inSign = longitude % 30;
     const degree = Math.floor(inSign);
     const minute = Math.round((inSign - degree) * 60);
-    return { body: bodyName, sign, degree, minute, element, modality, retrograde: retrograde(body, time) };
+    return { body: bodyName, sign, degree, minute, longitude, element, modality, retrograde: retrograde(body, time) };
   });
 };

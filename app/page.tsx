@@ -6,6 +6,7 @@ import { BirthProfile, Placement, calculatePlacements } from "./chart";
 type Tier = "free" | "seeker" | "depth" | "practitioner" | "practice" | "research";
 type Mode = "beginner" | "expert";
 type Section = "home" | "birth" | "chart" | "timing" | "journal" | "practice" | "reports" | "plans" | "account";
+type ReportSection = { title: string; body: string; items?: string[] };
 
 const tiers: Array<[Tier, string, string, string, string[]]> = [
   ["free", "$0", "start", "1 chart", ["birth profile", "placements", "element balance", "modality balance", "beginner meanings"]],
@@ -71,6 +72,76 @@ const summarize = (placements: Placement[], field: "element" | "modality") => {
   return Object.entries(counts).sort((a, b) => b[1] - a[1]);
 };
 
+const elementMeaning: Record<string, string> = {
+  fire: "fire emphasis makes the chart move through direct impulse, appetite, urgency, courage, and visible self-expression.",
+  earth: "earth emphasis makes the chart organize through proof, craft, money, maintenance, physical reality, and practical steadiness.",
+  air: "air emphasis makes the chart process through language, pattern recognition, ideas, comparison, social exchange, and perspective.",
+  water: "water emphasis makes the chart respond through memory, mood, intimacy, protection, instinct, and emotional intelligence."
+};
+
+const modalityMeaning: Record<string, string> = {
+  cardinal: "cardinal emphasis starts motion. the person tends to initiate, decide, push doors open, and create the first movement.",
+  fixed: "fixed emphasis sustains motion. the person tends to hold a line, deepen a position, protect continuity, and finish what matters.",
+  mutable: "mutable emphasis adapts motion. the person tends to translate, revise, bridge differences, and keep changing with the situation."
+};
+
+const placementLine = (placement: Placement) =>
+  `${lower(placement.body)}: ${placement.degree} deg ${placement.minute}' ${lower(placement.sign)}${placement.retrograde ? " / rx" : ""} / ${lower(placement.element)} / ${lower(placement.modality)}`;
+
+const buildReportSections = (
+  profile: BirthProfile,
+  placements: Placement[],
+  elementBalance: Array<[string, number]>,
+  modalityBalance: Array<[string, number]>,
+  journal: string,
+  mode: Mode
+): ReportSection[] => {
+  const lead = placements[1] ?? placements[0];
+  const strongestElement = elementBalance[0]?.[0] ?? "mixed";
+  const strongestModality = modalityBalance[0]?.[0] ?? "mixed";
+  const timeGuard = profile.birthTimeCertainty === "unknown"
+    ? "birth time is unknown, so the chart is calculated from noon and timing-sensitive claims should stay clearly marked until the time is confirmed."
+    : `birth time certainty is marked as ${profile.birthTimeCertainty.replaceAll("_", " ")}, so timing work can be read with that confidence level.`;
+
+  return [
+    {
+      title: "chart record",
+      body: `${profile.name} was calculated for ${profile.birthDate} at ${profile.birthTime} in ${profile.locationLabel}. ${timeGuard}`
+    },
+    {
+      title: "lead placement",
+      body: lead
+        ? `${lower(lead.body)} in ${lower(lead.sign)} gives the first reading angle: ${lower(lead.element)} tone, ${lower(lead.modality)} movement${lead.retrograde ? ", with retrograde emphasis" : ""}.`
+        : "lead placement is unavailable until the chart calculation returns placements."
+    },
+    {
+      title: "element balance",
+      body: `${strongestElement} is the strongest element in this chart. ${elementMeaning[strongestElement] ?? "the chart is evenly distributed, so no single element should dominate the interpretation."}`,
+      items: elementBalance.map(([name, count]) => `${count} ${name}`)
+    },
+    {
+      title: "modality balance",
+      body: `${strongestModality} is the strongest modality in this chart. ${modalityMeaning[strongestModality] ?? "the chart moves through more than one style, so interpretation should compare initiation, persistence, and adaptation."}`,
+      items: modalityBalance.map(([name, count]) => `${count} ${name}`)
+    },
+    {
+      title: "placements",
+      body: mode === "beginner"
+        ? "these are the technical chart lines. the sign gives style, the element gives tone, and the modality gives movement."
+        : "technical placement list for review.",
+      items: placements.map(placementLine)
+    },
+    {
+      title: "journal context",
+      body: journal.trim() ? journal.trim() : "no private journal note has been added yet."
+    },
+    {
+      title: "report note",
+      body: "keep private notes separate from client-visible interpretation. use the report as a draft, then edit the final language before sharing."
+    }
+  ];
+};
+
 export default function DreamLogicWorkspace() {
   const landingUrl = process.env.NEXT_PUBLIC_LANDING_URL ?? "https://dreamlogic-landingpage.vercel.app";
   const [profile, setProfile] = useState<BirthProfile>(defaultProfile);
@@ -85,12 +156,22 @@ export default function DreamLogicWorkspace() {
   const [notice, setNotice] = useState("sign in or create an account to save charts, notes, clients, and reports.");
   const [loading, setLoading] = useState("");
   const [guide, setGuide] = useState("plans");
+  const [lastSavedAt, setLastSavedAt] = useState("");
 
   const placements = useMemo(() => calculatePlacements(profile), [profile]);
   const elementBalance = useMemo(() => summarize(placements, "element"), [placements]);
   const modalityBalance = useMemo(() => summarize(placements, "modality"), [placements]);
+  const reportSections = useMemo(
+    () => buildReportSections(profile, placements, elementBalance, modalityBalance, journal, mode),
+    [profile, placements, elementBalance, modalityBalance, journal, mode]
+  );
   const leadPlacement = placements[1] ?? placements[0];
   const activeNav = nav.find(([key]) => key === section)?.[1] ?? "today";
+
+  const goToSection = (next: Section) => {
+    setSection(next);
+    window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+  };
 
   const auth = async (intent: "signup" | "login") => {
     setLoading(intent);
@@ -104,6 +185,7 @@ export default function DreamLogicWorkspace() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "account request failed");
       setNotice(data.message);
+      if (intent === "login") await loadWorkspace(false);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "account request failed");
     } finally {
@@ -124,7 +206,7 @@ export default function DreamLogicWorkspace() {
       window.location.href = data.url;
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "checkout unavailable");
-      setSection("account");
+      goToSection("account");
     } finally {
       setLoading("");
     }
@@ -137,6 +219,64 @@ export default function DreamLogicWorkspace() {
     setNotice(`${next} saved to client records.`);
   };
 
+  const workspacePayload = () => ({
+    profile,
+    placements,
+    elementBalance,
+    modalityBalance,
+    journal,
+    clients,
+    tier,
+    mode,
+    reportSections
+  });
+
+  const saveWorkspace = async () => {
+    setLoading("save-workspace");
+    setNotice("saving workspace...");
+    try {
+      const response = await fetch("/api/workspace", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(workspacePayload())
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "workspace save failed");
+      setLastSavedAt(data.updatedAt);
+      setNotice("workspace saved: birth profile, chart snapshot, journal note, and report draft are in supabase.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "workspace save failed");
+    } finally {
+      setLoading("");
+    }
+  };
+
+  const loadWorkspace = async (showNotice = true) => {
+    setLoading("load-workspace");
+    if (showNotice) setNotice("loading saved workspace...");
+    try {
+      const response = await fetch("/api/workspace");
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "workspace load failed");
+      if (!data.state) {
+        setNotice("no saved workspace yet. save this chart after signing in.");
+        return;
+      }
+
+      if (data.state.profile) setProfile(data.state.profile);
+      if (data.state.journal) setJournal(data.state.journal);
+      if (Array.isArray(data.state.clients)) setClients(data.state.clients);
+      if (data.state.tier) setTier(data.state.tier);
+      if (data.state.mode) setMode(data.state.mode);
+      setLastSavedAt(data.updatedAt ?? data.state.updatedAt ?? "");
+      setNotice("workspace loaded from supabase.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "workspace load failed");
+    } finally {
+      setLoading("");
+    }
+  };
+
   const downloadReport = () => {
     const lines = [
       "dream logic report",
@@ -145,11 +285,12 @@ export default function DreamLogicWorkspace() {
       `birth: ${profile.birthDate} / ${profile.birthTime} / ${profile.locationLabel}`,
       `time certainty: ${profile.birthTimeCertainty}`,
       "",
-      "placements",
-      ...placements.map((placement) => `${lower(placement.body)}: ${placement.degree} deg ${placement.minute}' ${lower(placement.sign)}${placement.retrograde ? " / rx" : ""} / ${lower(placement.element)} / ${lower(placement.modality)}`),
-      "",
-      "journal",
-      journal
+      ...reportSections.flatMap((section) => [
+        section.title,
+        section.body,
+        ...(section.items ?? []),
+        ""
+      ])
     ];
     const blob = new Blob([lines.join("\n")], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -168,13 +309,16 @@ export default function DreamLogicWorkspace() {
         </a>
         <nav aria-label="workspace">
           {nav.map(([key, label]) => (
-            <button className={section === key ? "on" : ""} key={key} onClick={() => setSection(key)}>{label}</button>
+            <button className={section === key ? "on" : ""} key={key} onClick={() => goToSection(key)}>{label}</button>
           ))}
         </nav>
       </aside>
 
       <section className="work">
         <header className="worktop">
+          <a className="mobile-logo" href={landingUrl}>
+            <img src="/brand/logomain.svg" alt="dream logic" />
+          </a>
           <div>
             <p>dream logic</p>
             <h1>{activeNav}</h1>
@@ -183,11 +327,11 @@ export default function DreamLogicWorkspace() {
             <button className={mode === "beginner" ? "on" : ""} onClick={() => setMode("beginner")}>beginner</button>
             <button className={mode === "expert" ? "on" : ""} onClick={() => setMode("expert")}>expert</button>
             <a href={landingUrl}>landing</a>
-            <button onClick={() => setSection("account")}>sign in</button>
+            <button onClick={() => goToSection("account")}>sign in</button>
           </div>
           <label className="mobile-switch">
             <span>go to</span>
-            <select value={section} onChange={(event) => setSection(event.target.value as Section)}>
+            <select value={section} onChange={(event) => goToSection(event.target.value as Section)}>
               {nav.map(([key, label]) => <option value={key} key={key}>{label}</option>)}
             </select>
           </label>
@@ -203,9 +347,10 @@ export default function DreamLogicWorkspace() {
                 <span>{profile.birthDate} / {profile.birthTime} / {profile.locationLabel}</span>
               </div>
               <div className="button-row">
-                <button onClick={() => setSection("birth")}>edit birth data</button>
-                <button onClick={() => setSection("chart")}>open chart</button>
-                <button onClick={() => setSection("reports")}>prepare report</button>
+                <button onClick={() => goToSection("birth")}>edit birth data</button>
+                <button onClick={() => goToSection("chart")}>open chart</button>
+                <button onClick={() => goToSection("reports")}>prepare report</button>
+                <button onClick={saveWorkspace} disabled={loading === "save-workspace"}>{loading === "save-workspace" ? "saving..." : "save workspace"}</button>
               </div>
             </article>
             <article>
@@ -300,14 +445,21 @@ export default function DreamLogicWorkspace() {
             <div className="paper">
               <img src="/brand/fulllitelogo.svg" alt="dream logic astrology suite" />
               <h3>primary chart</h3>
-              <p>{mode === "beginner" ? "meanings stay beside the technical sections." : "shorter export for experienced readers."}</p>
-              <div className="report-lines">
-                <span>{leadPlacement ? `${lower(leadPlacement.body)} in ${lower(leadPlacement.sign)}` : "chart lead unavailable"}</span>
-                <span>{elementBalance[0]?.[0]} emphasis</span>
-                <span>{modalityBalance[0]?.[0]} modality lead</span>
+              <p>{mode === "beginner" ? "technical chart lines are paired with plain-language meaning." : "compact technical report with interpretation anchors."}</p>
+              <div className="report-sections">
+                {reportSections.map((part) => (
+                  <section key={part.title}>
+                    <h4>{part.title}</h4>
+                    <p>{part.body}</p>
+                    {part.items && <ul>{part.items.map((item) => <li key={item}>{item}</li>)}</ul>}
+                  </section>
+                ))}
               </div>
             </div>
-            <button onClick={downloadReport}>download report</button>
+            <div className="button-row">
+              <button onClick={downloadReport}>download report</button>
+              <button onClick={saveWorkspace} disabled={loading === "save-workspace"}>{loading === "save-workspace" ? "saving..." : "save report"}</button>
+            </div>
           </article>
         )}
 
@@ -336,13 +488,18 @@ export default function DreamLogicWorkspace() {
                 <button onClick={() => auth("login")} disabled={loading === "login"}>{loading === "login" ? "checking..." : "sign in"}</button>
                 <button onClick={() => auth("signup")} disabled={loading === "signup"}>{loading === "signup" ? "creating..." : "create account"}</button>
               </div>
+              <div className="button-row">
+                <button onClick={saveWorkspace} disabled={loading === "save-workspace"}>{loading === "save-workspace" ? "saving..." : "save workspace"}</button>
+                <button onClick={() => loadWorkspace()} disabled={loading === "load-workspace"}>{loading === "load-workspace" ? "loading..." : "load workspace"}</button>
+              </div>
               <span className="note">{notice}</span>
+              {lastSavedAt && <span className="note">last saved {new Date(lastSavedAt).toLocaleString()}</span>}
             </article>
             <article>
               <p>current plan</p>
               <h2>{tier}</h2>
               <span>{tiers.find(([name]) => name === tier)?.[3]}</span>
-              <button onClick={() => setSection("plans")}>manage plan</button>
+              <button onClick={() => goToSection("plans")}>manage plan</button>
             </article>
           </div>
         )}
@@ -366,7 +523,7 @@ export default function DreamLogicWorkspace() {
       </section>
 
       <nav className="mobile-tabs" aria-label="mobile workspace">
-        {mobilePrimaryNav.map(([key, label]) => <button className={section === key ? "on" : ""} key={key} onClick={() => setSection(key)}>{label}</button>)}
+        {mobilePrimaryNav.map(([key, label]) => <button className={section === key ? "on" : ""} key={key} onClick={() => goToSection(key)}>{label}</button>)}
       </nav>
     </main>
   );

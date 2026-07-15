@@ -42,13 +42,18 @@ the production database should store:
 - subscription status.
 - event logs.
 
-use the migration in the admin/original repo as the starting schema:
+run the migrations in this repo in order:
 
 ```txt
-dream-logic/supabase/migrations/202607120001_initial_foundation.sql
+supabase/migrations/202607120001_initial_foundation.sql
+supabase/migrations/202607150001_workspace_state.sql
 ```
 
-run it in supabase sql editor.
+run both in supabase sql editor.
+
+the first migration creates the structured product tables.
+
+the second migration creates `workspace_states`, which lets the app restore the complete current workspace for a signed-in user.
 
 ## 4. stripe secret key
 
@@ -147,15 +152,17 @@ in vercel:
 2. open `analytics`.
 3. watch app visits, workspace opens, pricing clicks, saved chart starts, and report preparation.
 
-## 9. what needs the keys before it becomes live
+## 9. what works after the keys are set
 
 without your supabase and stripe values, the app can render the product experience and calculate charts, but cannot truly persist user accounts, charge buyers, or sync subscriptions.
 
-after the keys are set, the remaining server work is:
+after the keys and migrations are set:
 
-- connect saved chart/profile forms to supabase insert and update routes.
-- write verified stripe subscription status into the subscriptions table.
-- save birth profiles and chart snapshots.
-- save journal entries.
-- save client records.
-- save report records.
+- `/api/auth/access` creates accounts, signs users in, and sets secure http-only auth cookies.
+- `/api/workspace` saves the active workspace to supabase.
+- saved workspace data includes birth profile, chart snapshot, chart points, journal note, report draft, selected plan, beginner/expert mode, clients, and balance summaries.
+- `/api/workspace` also loads the signed-in user's last saved workspace back into the app.
+- `/api/checkout` opens stripe checkout for paid plans.
+- `/api/stripe/webhook` records verified stripe webhook events in `audit_logs`.
+
+subscription status is ready to be written from stripe events; once real payments begin, expand the webhook handler to map each customer/subscription into the `subscriptions` table.
