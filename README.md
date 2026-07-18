@@ -17,6 +17,7 @@ the app includes:
 - practice/client workspace
 - report preparation
 - pricing tiers
+- hypnos ai chart chat
 
 ## calculation model
 
@@ -32,7 +33,7 @@ current calculation output includes:
 - modality
 - retrograde status
 
-birth location is currently stored as a user-facing label. full geocoding, house systems, payments, database accounts, and production auth still need provider wiring.
+birth location is currently stored as a user-facing label. full geocoding and house systems are the next calculation upgrades after latitude/longitude lookup is added.
 
 ## local setup
 
@@ -71,8 +72,9 @@ read `BACKEND_SETUP.md` for the complete beginner setup:
 - stripe secret key.
 - stripe products and price ids.
 - stripe webhook secret.
+- openai key for hypnos ai.
 - vercel environment variables.
-- what still needs private credentials before live account/payment persistence works.
+- what each private credential unlocks.
 
 ## product structure
 

@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BirthProfile, Placement, calculatePlacements } from "./chart";
 
 type Tier = "free" | "seeker" | "depth" | "practitioner" | "practice" | "research";
 type Mode = "beginner" | "expert";
-type Section = "home" | "birth" | "chart" | "timing" | "journal" | "practice" | "reports" | "plans" | "account";
+type Section = "home" | "birth" | "chart" | "timing" | "journal" | "practice" | "reports" | "hypnos" | "plans" | "account";
 type ReportSection = { title: string; body: string; items?: string[] };
+type HypnosMessage = { role: "user" | "assistant"; text: string };
 
 const tiers: Array<[Tier, string, string, string, string[]]> = [
   ["free", "$0", "start", "1 chart", ["birth profile", "placements", "element balance", "modality balance", "beginner meanings"]],
@@ -25,6 +26,7 @@ const nav: Array<[Section, string]> = [
   ["journal", "journal"],
   ["practice", "clients"],
   ["reports", "reports"],
+  ["hypnos", "hypnos"],
   ["plans", "plans"],
   ["account", "account"]
 ];
@@ -33,8 +35,8 @@ const mobilePrimaryNav: Array<[Section, string]> = [
   ["home", "today"],
   ["birth", "birth"],
   ["chart", "chart"],
-  ["journal", "notes"],
-  ["reports", "report"]
+  ["reports", "report"],
+  ["hypnos", "hypnos"]
 ];
 
 const glossary = [
@@ -50,7 +52,25 @@ const guideText: Record<string, string> = {
   placements: "placements are the planet, sign, degree, element, modality, and retrograde status. this is the raw chart language before interpretation.",
   retrograde: "retrograde marks planets whose motion is read as review, return, internal emphasis, or delayed expression.",
   plans: "plans are separated by actual workflow: number of charts, timing depth, reports, client records, team seats, and research export.",
-  "time certainty": "time certainty protects the reading. if the time is unknown, the app keeps timing-sensitive details separated."
+  "time certainty": "time certainty protects the reading. if the time is unknown, the app keeps timing-sensitive details separated.",
+  hypnos: "hypnos ai reads the saved report context, placements, balance, journal note, and plan access before answering. free users can try it, paid plans unlock more room."
+};
+
+const tourSteps = [
+  ["start with birth data", "confirm the date, time, place, and time certainty. if the time is unknown, dream logic keeps timing-sensitive reading separate."],
+  ["read the chart", "open chart to see placements, element balance, modality balance, and retrograde status. use explain when a term is unclear."],
+  ["save your work", "save workspace writes the birth profile, chart snapshot, journal note, report draft, and restore state to supabase after sign in."],
+  ["prepare a report", "reports turn the current chart, balances, and journal context into a draft you can save or download."],
+  ["ask hypnos", "hypnos ai uses the saved report context to explain the reading and today's chart meaning. free access is limited; paid tiers get more room."]
+] as const;
+
+const hypnosLimits: Record<Tier, number> = {
+  free: 3,
+  seeker: 25,
+  depth: 60,
+  practitioner: 120,
+  practice: 250,
+  research: 500
 };
 
 const defaultProfile: BirthProfile = {
@@ -156,7 +176,13 @@ export default function DreamLogicWorkspace() {
   const [notice, setNotice] = useState("sign in or create an account to save charts, notes, clients, and reports.");
   const [loading, setLoading] = useState("");
   const [guide, setGuide] = useState("plans");
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [showTour, setShowTour] = useState(false);
+  const [tourStep, setTourStep] = useState(0);
   const [lastSavedAt, setLastSavedAt] = useState("");
+  const [hypnosQuestion, setHypnosQuestion] = useState("what does this chart mean for today?");
+  const [hypnosMessages, setHypnosMessages] = useState<HypnosMessage[]>([]);
+  const [hypnosUses, setHypnosUses] = useState(0);
 
   const placements = useMemo(() => calculatePlacements(profile), [profile]);
   const elementBalance = useMemo(() => summarize(placements, "element"), [placements]);
@@ -167,10 +193,36 @@ export default function DreamLogicWorkspace() {
   );
   const leadPlacement = placements[1] ?? placements[0];
   const activeNav = nav.find(([key]) => key === section)?.[1] ?? "today";
+  const hypnosRemaining = Math.max(0, hypnosLimits[tier] - hypnosUses);
+
+  useEffect(() => {
+    const savedSection = window.location.hash.replace("#", "") as Section;
+    if (nav.some(([key]) => key === savedSection)) {
+      setSection(savedSection);
+    } else {
+      const storedSection = window.localStorage.getItem("dreamlogic.section") as Section | null;
+      if (storedSection && nav.some(([key]) => key === storedSection)) setSection(storedSection);
+    }
+
+    const tourSeen = window.localStorage.getItem("dreamlogic.tour.seen");
+    if (!tourSeen) setShowTour(true);
+  }, []);
 
   const goToSection = (next: Section) => {
     setSection(next);
+    window.history.replaceState(null, "", `#${next}`);
+    window.localStorage.setItem("dreamlogic.section", next);
     window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+  };
+
+  const openGuide = (topic: string) => {
+    setGuide(topic);
+    setGuideOpen(true);
+  };
+
+  const finishTour = () => {
+    window.localStorage.setItem("dreamlogic.tour.seen", "true");
+    setShowTour(false);
   };
 
   const auth = async (intent: "signup" | "login") => {
@@ -245,7 +297,9 @@ export default function DreamLogicWorkspace() {
       setLastSavedAt(data.updatedAt);
       setNotice("workspace saved: birth profile, chart snapshot, journal note, and report draft are in supabase.");
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "workspace save failed");
+      const message = error instanceof Error ? error.message : "workspace save failed";
+      setNotice(message);
+      if (message.includes("sign in") || message.includes("auth")) goToSection("account");
     } finally {
       setLoading("");
     }
@@ -301,6 +355,49 @@ export default function DreamLogicWorkspace() {
     URL.revokeObjectURL(url);
   };
 
+  const askHypnos = async () => {
+    const question = hypnosQuestion.trim();
+    if (!question) return;
+    if (hypnosRemaining <= 0) {
+      setNotice("hypnos free limit reached for this session. choose a paid plan for more readings.");
+      goToSection("plans");
+      return;
+    }
+
+    const userMessage: HypnosMessage = { role: "user", text: question };
+    setHypnosMessages((messages) => [...messages, userMessage]);
+    setHypnosQuestion("");
+    setLoading("hypnos");
+
+    try {
+      const response = await fetch("/api/hypnos", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tier,
+          question,
+          profile,
+          placements,
+          elementBalance,
+          modalityBalance,
+          reportSections,
+          journal
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "hypnos is unavailable");
+      setHypnosMessages((messages) => [...messages, { role: "assistant", text: data.answer }]);
+      setHypnosUses((uses) => uses + 1);
+    } catch (error) {
+      setHypnosMessages((messages) => [...messages, {
+        role: "assistant",
+        text: error instanceof Error ? error.message : "hypnos is unavailable"
+      }]);
+    } finally {
+      setLoading("");
+    }
+  };
+
   return (
     <main className="app">
       <aside className="rail">
@@ -326,6 +423,7 @@ export default function DreamLogicWorkspace() {
           <div className="tools">
             <button className={mode === "beginner" ? "on" : ""} onClick={() => setMode("beginner")}>beginner</button>
             <button className={mode === "expert" ? "on" : ""} onClick={() => setMode("expert")}>expert</button>
+            <button onClick={() => setShowTour(true)}>tour</button>
             <a href={landingUrl}>landing</a>
             <button onClick={() => goToSection("account")}>sign in</button>
           </div>
@@ -336,6 +434,13 @@ export default function DreamLogicWorkspace() {
             </select>
           </label>
         </header>
+
+        {(notice || lastSavedAt) && (
+          <section className="status-strip" aria-live="polite">
+            <span>{notice}</span>
+            {lastSavedAt && <strong>saved {new Date(lastSavedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</strong>}
+          </section>
+        )}
 
         {section === "home" && (
           <div className="pane-grid">
@@ -358,8 +463,8 @@ export default function DreamLogicWorkspace() {
               <h2>{lower(leadPlacement.body)} in {lower(leadPlacement.sign)}</h2>
               <span>{mode === "beginner" ? "start here, then check element and modality balance." : "use this as the lead angle, then verify with balance and timing."}</span>
             </article>
-            <Balance title="element balance" items={elementBalance} onGuide={() => setGuide("element balance")} />
-            <Balance title="modality balance" items={modalityBalance} onGuide={() => setGuide("modality balance")} />
+            <Balance title="element balance" items={elementBalance} onGuide={() => openGuide("element balance")} />
+            <Balance title="modality balance" items={modalityBalance} onGuide={() => openGuide("modality balance")} />
           </div>
         )}
 
@@ -379,16 +484,16 @@ export default function DreamLogicWorkspace() {
               </select></label>
               <label className="wide">place<input value={profile.locationLabel} onChange={(event) => setProfile({ ...profile, locationLabel: lower(event.target.value) })} /></label>
             </div>
-            {mode === "beginner" && <button className="note help-button" onClick={() => setGuide("time certainty")}>unknown time uses noon. timing-sensitive details stay separated.</button>}
+            {mode === "beginner" && <button className="note help-button" onClick={() => openGuide("time certainty")}>unknown time uses noon. timing-sensitive details stay separated.</button>}
           </article>
         )}
 
         {section === "chart" && (
           <div className="pane-grid">
-            <Balance title="element balance" items={elementBalance} help="the repeated energy in the chart." onGuide={() => setGuide("element balance")} />
-            <Balance title="modality balance" items={modalityBalance} help="the way that energy moves." onGuide={() => setGuide("modality balance")} />
+            <Balance title="element balance" items={elementBalance} help="the repeated energy in the chart." onGuide={() => openGuide("element balance")} />
+            <Balance title="modality balance" items={modalityBalance} help="the way that energy moves." onGuide={() => openGuide("modality balance")} />
             <article className="wide-card">
-              <div className="card-title"><p>placements</p><button onClick={() => setGuide("placements")}>what is this?</button></div>
+              <div className="card-title"><p>placements</p><button onClick={() => openGuide("placements")}>what is this?</button></div>
               <div className="placement-grid">
                 {placements.map((placement) => (
                   <div className="placement" key={placement.body}>
@@ -459,8 +564,42 @@ export default function DreamLogicWorkspace() {
             <div className="button-row">
               <button onClick={downloadReport}>download report</button>
               <button onClick={saveWorkspace} disabled={loading === "save-workspace"}>{loading === "save-workspace" ? "saving..." : "save report"}</button>
+              <button onClick={() => { setGuideOpen(false); goToSection("hypnos"); }}>ask hypnos</button>
             </div>
           </article>
+        )}
+
+        {section === "hypnos" && (
+          <div className="pane-grid hypnos-grid">
+            <article className="hypnos-panel">
+              <p>hypnos ai</p>
+              <h2>ask about the chart</h2>
+              <span>hypnos reads the current report draft, placements, balance, and journal context. free tier has {hypnosLimits.free} tries per session; your current {tier} limit is {hypnosLimits[tier]}.</span>
+              <div className="hypnos-thread">
+                {hypnosMessages.length === 0 && <span className="empty-thread">ask what the chart means, what to focus on today, or how to explain a report section.</span>}
+                {hypnosMessages.map((message, index) => (
+                  <div className={`hypnos-message ${message.role}`} key={`${message.role}-${index}`}>
+                    <strong>{message.role === "user" ? "you" : "hypnos"}</strong>
+                    <span>{message.text}</span>
+                  </div>
+                ))}
+              </div>
+              <textarea value={hypnosQuestion} onChange={(event) => setHypnosQuestion(event.target.value)} />
+              <div className="button-row">
+                <button onClick={askHypnos} disabled={loading === "hypnos"}>{loading === "hypnos" ? "reading..." : "ask hypnos"}</button>
+                <button onClick={saveWorkspace} disabled={loading === "save-workspace"}>save context</button>
+              </div>
+              <span className="note">{hypnosRemaining} hypnos asks left on {tier}.</span>
+            </article>
+            <article>
+              <p>active report context</p>
+              <h2>{profile.name}</h2>
+              <span>{reportSections[1]?.body}</span>
+              <div className="report-lines compact-lines">
+                {reportSections.slice(2, 5).map((part) => <span key={part.title}>{part.title}: {part.body}</span>)}
+              </div>
+            </article>
+          </div>
         )}
 
         {section === "plans" && (
@@ -471,7 +610,7 @@ export default function DreamLogicWorkspace() {
                 <h2>{price}</h2>
                 <span>{label} / {limit}</span>
                 <ul>{features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
-                <button className="plain-button" onClick={() => setGuide("plans")}>why this plan?</button>
+                <button className="plain-button" onClick={() => openGuide("plans")}>why this plan?</button>
                 <button onClick={() => name === "free" ? setTier("free") : checkout(name)} disabled={loading === name}>{loading === name ? "opening..." : name === "free" ? "try free" : "subscribe"}</button>
               </article>
             ))}
@@ -510,14 +649,36 @@ export default function DreamLogicWorkspace() {
           </section>
         )}
 
-        {mode === "beginner" && (
-          <aside className="guide-panel" aria-live="polite">
+        {guideOpen && (
+          <aside className="guide-sheet" aria-live="polite" role="dialog" aria-label={`${guide} guide`}>
             <div>
               <p>guide</p>
               <h2>{guide}</h2>
               <span>{guideText[guide]}</span>
             </div>
-            <button onClick={() => setMode("expert")}>hide guide</button>
+            <div className="button-row">
+              <button onClick={() => setGuideOpen(false)}>close</button>
+              <button onClick={() => goToSection("hypnos")}>ask hypnos</button>
+            </div>
+          </aside>
+        )}
+
+        {showTour && (
+          <aside className="tour-layer" role="dialog" aria-label="dream logic tour">
+            <div className="tour-card">
+              <p>first run</p>
+              <h2>{tourSteps[tourStep][0]}</h2>
+              <span>{tourSteps[tourStep][1]}</span>
+              <div className="tour-progress">
+                {tourSteps.map((_, index) => <i className={index === tourStep ? "on" : ""} key={index} />)}
+              </div>
+              <div className="button-row">
+                <button onClick={finishTour}>skip</button>
+                <button onClick={() => tourStep === tourSteps.length - 1 ? finishTour() : setTourStep((step) => step + 1)}>
+                  {tourStep === tourSteps.length - 1 ? "start" : "next"}
+                </button>
+              </div>
+            </div>
           </aside>
         )}
       </section>

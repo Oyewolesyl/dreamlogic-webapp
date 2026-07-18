@@ -155,7 +155,28 @@ NEXT_PUBLIC_LANDING_URL=https://your-landing-domain
 
 the web app should link back to the landing page from nav/account/help areas.
 
-## 8. analytics
+## 8. hypnos ai
+
+hypnos ai uses the current report draft, placements, chart balance, and journal context to answer chart questions.
+
+to enable openai answers:
+
+1. open `https://platform.openai.com/`.
+2. open `api keys`.
+3. create a new secret key.
+4. copy the key that starts with `sk-`.
+5. add it to the web app vercel project only:
+
+```txt
+OPENAI_API_KEY=sk-your-openai-key
+OPENAI_MODEL=gpt-4.1-mini
+```
+
+`OPENAI_MODEL` is optional. if it is not set, the app uses `gpt-4.1-mini`.
+
+if `OPENAI_API_KEY` is missing, hypnos still returns a local chart explanation from the current placements/report so the button is not dead during setup.
+
+## 9. analytics
 
 vercel analytics is already installed.
 
@@ -165,7 +186,7 @@ in vercel:
 2. open `analytics`.
 3. watch app visits, workspace opens, pricing clicks, saved chart starts, and report preparation.
 
-## 9. what works after the keys are set
+## 10. what works after the keys are set
 
 without your supabase and stripe values, the app can render the product experience and calculate charts, but cannot truly persist user accounts, charge buyers, or sync subscriptions.
 
@@ -177,5 +198,6 @@ after the keys and migrations are set:
 - `/api/workspace` also loads the signed-in user's last saved workspace back into the app.
 - `/api/checkout` opens stripe checkout for paid plans.
 - `/api/stripe/webhook` records verified stripe webhook events in `audit_logs`.
+- `/api/hypnos` answers chart/report questions with openai when `OPENAI_API_KEY` is set, and falls back to local chart explanation before that.
 
 subscription status is ready to be written from stripe events; once real payments begin, expand the webhook handler to map each customer/subscription into the `subscriptions` table.
