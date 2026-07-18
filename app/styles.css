@@ -1489,3 +1489,253 @@ article,
     grid-template-columns: 1fr;
   }
 }
+
+/* last refinement: calmer app chrome and clearer working surfaces */
+.app {
+  background:
+    linear-gradient(180deg, rgba(5, 5, 7, .2), rgba(5, 5, 7, .78)),
+    rgba(8, 8, 10, .96);
+}
+
+.rail {
+  border-right-color: rgba(248, 244, 236, .08);
+  background: rgba(9, 9, 11, .82);
+}
+
+.rail nav button {
+  min-height: 38px;
+  border-left: 2px solid transparent;
+  color: rgba(248, 244, 236, .62);
+  font-size: .92rem;
+}
+
+.rail nav button.on {
+  border-color: rgba(241, 190, 34, .58);
+  background: rgba(241, 190, 34, .07);
+  color: rgba(248, 244, 236, .94);
+}
+
+.worktop {
+  position: sticky;
+  top: 0;
+  z-index: 18;
+  backdrop-filter: blur(18px);
+}
+
+.tools button,
+.tools a,
+.mobile-switch button,
+.mobile-tabs button {
+  transition: background .18s ease, border-color .18s ease, color .18s ease;
+}
+
+.tools button,
+.tools a {
+  border-color: rgba(248, 244, 236, .11);
+  background: rgba(248, 244, 236, .035);
+}
+
+.tools button.on {
+  border-color: rgba(143, 181, 245, .34);
+  background: rgba(143, 181, 245, .08);
+  color: #b7cdfb;
+}
+
+.pane-grid {
+  gap: 14px;
+}
+
+article,
+.form-pane,
+.report,
+.paper {
+  box-shadow: none;
+}
+
+article p,
+.form-pane p,
+.report p,
+.import-box p {
+  color: rgba(241, 190, 34, .88);
+  font-size: .76rem;
+  letter-spacing: .08em;
+}
+
+article h2,
+.form-pane h2,
+.report h2,
+.hypnos-panel h2,
+.account-plan h2 {
+  color: rgba(248, 244, 236, .94);
+  letter-spacing: 0;
+}
+
+article > span,
+.form-pane > span,
+.report > span,
+.hypnos-panel > span,
+.note {
+  color: rgba(248, 244, 236, .64);
+}
+
+input,
+select,
+textarea {
+  border-color: rgba(248, 244, 236, .13);
+  background: rgba(5, 5, 7, .46);
+  color: rgba(248, 244, 236, .92);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: rgba(248, 244, 236, .36);
+}
+
+.screen-guide {
+  border-left: 2px solid rgba(143, 181, 245, .36);
+}
+
+.active-chart > div {
+  gap: 6px;
+}
+
+.active-chart h2 {
+  max-width: 740px;
+}
+
+.placement {
+  border-color: rgba(248, 244, 236, .1);
+  background: rgba(248, 244, 236, .03);
+}
+
+.placement strong {
+  color: #b7cdfb;
+}
+
+.placement span {
+  color: rgba(248, 244, 236, .88);
+}
+
+.placement small {
+  color: rgba(248, 244, 236, .54);
+}
+
+.report-lines span,
+.compact-lines span,
+.client-list span {
+  border-color: rgba(248, 244, 236, .1);
+  background: rgba(248, 244, 236, .032);
+}
+
+.hypnos-thread {
+  border-color: rgba(248, 244, 236, .1);
+  background: rgba(5, 5, 7, .38);
+}
+
+.hypnos-message {
+  border-color: rgba(248, 244, 236, .1);
+}
+
+.hypnos-message.assistant {
+  background: rgba(143, 181, 245, .06);
+}
+
+.hypnos-message.user {
+  background: rgba(241, 190, 34, .08);
+}
+
+.tour-progress i {
+  background: rgba(248, 244, 236, .18);
+}
+
+.tour-progress i.on {
+  background: rgba(241, 190, 34, .88);
+}
+
+@media (max-width: 980px) {
+  .worktop {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .mobile-logo {
+    width: 62px;
+  }
+
+  .worktop h1 {
+    font-size: clamp(1rem, 4.2vw, 1.38rem);
+  }
+
+  .tools {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .tools a,
+  .tools button:nth-last-child(-n + 2) {
+    display: none;
+  }
+
+  .screen-guide {
+    border-left-width: 0;
+  }
+
+  article,
+  .form-pane,
+  .report,
+  .paper {
+    padding: 16px;
+  }
+
+  .active-chart {
+    min-height: auto;
+  }
+
+  .active-chart h2 {
+    font-size: clamp(1.8rem, 8vw, 2.35rem);
+  }
+
+  .mobile-tabs {
+    border-color: rgba(248, 244, 236, .12);
+    background: rgba(9, 9, 11, .92);
+  }
+
+  .mobile-tabs button.on {
+    background: rgba(241, 190, 34, .1);
+  }
+}
+
+@media (max-width: 560px) {
+  .work {
+    padding-inline: 12px;
+  }
+
+  .worktop {
+    margin-inline: -12px;
+    padding-inline: 12px;
+  }
+
+  .tools {
+    gap: 6px;
+  }
+
+  .tools button {
+    min-height: 36px;
+  }
+
+  .mobile-switch {
+    gap: 6px;
+  }
+
+  .mobile-switch button {
+    min-height: 34px;
+    padding-inline: 10px;
+  }
+
+  .screen-guide span {
+    line-height: 1.38;
+  }
+
+  .action-button {
+    min-height: 62px;
+  }
+}

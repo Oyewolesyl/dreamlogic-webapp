@@ -78,7 +78,7 @@ read `BACKEND_SETUP.md` for the complete beginner setup:
 
 ## product structure
 
-the web app should stay focused on the workspace experience. marketing copy, investor content, and public pitch material belong in the landing repo.
+the web app should stay focused on the workspace experience. public product explanation belongs in the landing repo.
 
 github:
 
@@ -88,6 +88,6 @@ https://github.com/Oyewolesyl/dreamlogic-webapp.git
 
 ## connected repos
 
-- landing page: public marketing and investor site
+- landing page: public product site
 - web app: user-facing astrology workspace
 - admin dashboard: private internal dashboard protected by password
