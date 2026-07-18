@@ -1875,3 +1875,328 @@ article {
     font-size: .86rem;
   }
 }
+
+/* final launch refinement: compact mobile app shell and clearer controls */
+.guide-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.guide-actions button {
+  min-height: 38px;
+  border: 1px solid rgba(248, 244, 236, .11);
+  background: rgba(248, 244, 236, .035);
+  color: rgba(248, 244, 236, .72);
+  padding: 0 13px;
+  font-weight: 800;
+  text-transform: lowercase;
+}
+
+.guide-actions button.on {
+  border-color: rgba(143, 181, 245, .32);
+  background: rgba(143, 181, 245, .075);
+  color: #b7cdfb;
+}
+
+.active-chart,
+.screen-guide,
+.status-strip,
+article {
+  backdrop-filter: blur(10px);
+}
+
+.action-button,
+.tools button,
+.tools a,
+.guide-actions button,
+.mobile-switch button,
+.mobile-tabs button,
+.button-row button,
+.file-button,
+.plans button,
+.account-plan button {
+  border-radius: 0;
+}
+
+.action-button.primary,
+.button-row button.primary-button,
+.form-pane .button-row button.primary-button {
+  background: #f1be22;
+  color: #0f0f10;
+}
+
+.action-button.primary:hover,
+.button-row button.primary-button:hover,
+.form-pane .button-row button.primary-button:hover {
+  background: #f4c943;
+}
+
+.button-row button.secondary-button,
+.form-pane .button-row button.secondary-button,
+.account-actions button.secondary-button,
+.account-plan button.secondary-button,
+.report .button-row button.secondary-button {
+  border-color: rgba(248, 244, 236, .18);
+  background: rgba(248, 244, 236, .04);
+  color: rgba(248, 244, 236, .9);
+}
+
+.account-pane label + label,
+.account-pane .button-row {
+  margin-top: 12px;
+}
+
+.account-pane input {
+  min-height: 54px;
+}
+
+.account-actions button {
+  min-height: 54px;
+  white-space: normal;
+}
+
+.account-plan {
+  display: grid;
+  gap: 12px;
+}
+
+.account-plan h2 {
+  font-size: clamp(2.2rem, 6vw, 4rem);
+}
+
+.plans article {
+  display: grid;
+  gap: 10px;
+}
+
+.plans article button:last-child {
+  align-self: end;
+}
+
+.balance {
+  align-items: stretch;
+}
+
+.balance span {
+  min-width: 0;
+}
+
+@media (min-width: 981px) {
+  .screen-guide .guide-actions button:nth-child(-n + 3) {
+    display: none;
+  }
+}
+
+@media (max-width: 980px) {
+  body {
+    background-attachment: scroll;
+  }
+
+  .work {
+    padding: 8px 12px calc(92px + env(safe-area-inset-bottom));
+  }
+
+  .worktop {
+    position: sticky;
+    top: 0;
+    grid-template-columns: 58px minmax(0, 1fr);
+    margin: -8px -12px 8px;
+    padding: 10px 12px 8px;
+    background: rgba(8, 8, 10, .94);
+  }
+
+  .mobile-logo {
+    width: 54px;
+  }
+
+  .worktop h1 {
+    font-size: clamp(.98rem, 4vw, 1.28rem);
+    line-height: 1.05;
+  }
+
+  .tools {
+    display: none;
+  }
+
+  .mobile-switch {
+    grid-column: 1 / -1;
+    margin-top: 4px;
+    padding-bottom: 0;
+  }
+
+  .mobile-switch button {
+    min-height: 32px;
+    padding-inline: 10px;
+    font-size: .78rem;
+  }
+
+  .status-strip {
+    margin: 0 auto 8px;
+    border-color: rgba(248, 244, 236, .08);
+    background: rgba(248, 244, 236, .026);
+    padding: 9px 10px;
+    font-size: .8rem;
+  }
+
+  .screen-guide {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding: 11px 12px;
+  }
+
+  .screen-guide div {
+    gap: 2px;
+  }
+
+  .screen-guide p,
+  article p,
+  .form-pane p,
+  .report p,
+  .import-box p {
+    font-size: .68rem;
+    letter-spacing: .08em;
+  }
+
+  .screen-guide span {
+    font-size: .82rem;
+    line-height: 1.35;
+  }
+
+  .guide-actions {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .guide-actions button {
+    min-height: 34px;
+    padding: 0 6px;
+    font-size: .76rem;
+  }
+
+  .pane-grid {
+    gap: 10px;
+  }
+
+  article,
+  .form-pane,
+  .report,
+  .paper {
+    padding: 14px;
+  }
+
+  .active-chart {
+    gap: 12px;
+    padding: 15px 14px;
+  }
+
+  .active-chart h2 {
+    font-size: clamp(1.55rem, 7vw, 2.1rem);
+    line-height: 1;
+  }
+
+  .active-chart > div > span,
+  article > span,
+  .form-pane > span,
+  .report > span,
+  .note {
+    font-size: .88rem;
+    line-height: 1.42;
+  }
+
+  .action-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .action-button {
+    min-height: 58px;
+    padding: 10px;
+  }
+
+  .action-button strong {
+    font-size: .84rem;
+    line-height: 1.12;
+  }
+
+  .action-button span {
+    font-size: .68rem;
+  }
+
+  .card-title button {
+    min-height: 36px;
+    font-size: .78rem;
+  }
+
+  .balance {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .balance span {
+    min-height: 52px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    justify-content: start;
+    gap: 8px;
+    padding: 10px;
+    font-size: .84rem;
+  }
+
+  .balance strong {
+    order: initial;
+  }
+
+  .placement-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .account-actions button {
+    min-height: 50px;
+  }
+
+  .guide-sheet {
+    left: 12px;
+    right: 12px;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    width: auto;
+    padding: 16px;
+  }
+
+  .guide-sheet .button-row,
+  .tour-card .button-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mobile-tabs {
+    left: 8px;
+    right: 8px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    gap: 2px;
+    padding: 4px;
+  }
+
+  .mobile-tabs button {
+    min-height: 40px;
+    font-size: .68rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .guide-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .action-grid,
+  .balance {
+    grid-template-columns: 1fr;
+  }
+}

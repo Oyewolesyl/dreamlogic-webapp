@@ -35,16 +35,16 @@ const mobilePrimaryNav: Array<[Section, string]> = [
   ["home", "today"],
   ["birth", "birth"],
   ["chart", "chart"],
-  ["hypnos", "hypnos"],
-  ["account", "account"]
+  ["reports", "report"],
+  ["hypnos", "hypnos"]
 ];
 
 const mobileMoreNav: Array<[Section, string]> = [
-  ["reports", "report"],
   ["timing", "timing"],
   ["journal", "notes"],
   ["practice", "clients"],
-  ["plans", "plans"]
+  ["plans", "plans"],
+  ["account", "account"]
 ];
 
 const glossary = [
@@ -329,9 +329,18 @@ export default function DreamLogicWorkspace() {
     reportSections
   });
 
+  const applyWorkspaceState = (state: Record<string, unknown>) => {
+    if (state.profile) setProfile(state.profile as BirthProfile);
+    if (typeof state.journal === "string") setJournal(state.journal);
+    if (Array.isArray(state.clients)) setClients(state.clients as string[]);
+    if (typeof state.tier === "string") setTier(state.tier as Tier);
+    if (typeof state.mode === "string") setMode(state.mode as Mode);
+  };
+
   const saveWorkspace = async () => {
     setLoading("save-workspace");
     setNotice("saving workspace...");
+    const fallbackSavedAt = new Date().toISOString();
     try {
       const response = await fetch("/api/workspace", {
         method: "POST",
@@ -344,8 +353,10 @@ export default function DreamLogicWorkspace() {
       setNotice("workspace saved: birth profile, chart snapshot, journal note, and report draft are in supabase.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "workspace save failed";
-      setNotice(message);
-      if (message.includes("sign in") || message.includes("auth")) goToSection("account");
+      window.localStorage.setItem("dreamlogic.localWorkspace", JSON.stringify({ ...workspacePayload(), updatedAt: fallbackSavedAt }));
+      setLastSavedAt(fallbackSavedAt);
+      setNotice(`workspace saved on this device. sign in after backend setup to sync it online. (${message})`);
+      if (message.includes("sign in") || message.includes("auth") || message.includes("supabase")) goToSection("account");
     } finally {
       setLoading("");
     }
@@ -359,19 +370,31 @@ export default function DreamLogicWorkspace() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "workspace load failed");
       if (!data.state) {
-        setNotice("no saved workspace yet. save this chart after signing in.");
+        const local = window.localStorage.getItem("dreamlogic.localWorkspace");
+        if (local) {
+          const parsed = JSON.parse(local);
+          applyWorkspaceState(parsed);
+          setLastSavedAt(parsed.updatedAt ?? "");
+          setNotice("local workspace loaded from this device.");
+          return;
+        }
+        setNotice("no saved workspace yet. save this chart after signing in or use local save.");
         return;
       }
 
-      if (data.state.profile) setProfile(data.state.profile);
-      if (data.state.journal) setJournal(data.state.journal);
-      if (Array.isArray(data.state.clients)) setClients(data.state.clients);
-      if (data.state.tier) setTier(data.state.tier);
-      if (data.state.mode) setMode(data.state.mode);
+      applyWorkspaceState(data.state);
       setLastSavedAt(data.updatedAt ?? data.state.updatedAt ?? "");
       setNotice("workspace loaded from supabase.");
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "workspace load failed");
+      const local = window.localStorage.getItem("dreamlogic.localWorkspace");
+      if (local) {
+        const parsed = JSON.parse(local);
+        applyWorkspaceState(parsed);
+        setLastSavedAt(parsed.updatedAt ?? "");
+        setNotice("local workspace loaded from this device. online sync starts after backend setup.");
+      } else {
+        setNotice(error instanceof Error ? error.message : "workspace load failed");
+      }
     } finally {
       setLoading("");
     }
@@ -525,7 +548,12 @@ export default function DreamLogicWorkspace() {
             <p>{sectionGuides[section].title}</p>
             <span>{sectionGuides[section].body}</span>
           </div>
-          <button onClick={() => openGuide(section === "home" ? "today" : activeNav)}>guide</button>
+          <div className="guide-actions">
+            <button className={mode === "beginner" ? "on" : ""} onClick={() => setMode("beginner")}>beginner</button>
+            <button className={mode === "expert" ? "on" : ""} onClick={() => setMode("expert")}>expert</button>
+            <button onClick={() => setShowTour(true)}>tour</button>
+            <button onClick={() => openGuide(section === "home" ? "today" : activeNav)}>guide</button>
+          </div>
         </section>
 
         {section === "home" && (
@@ -762,8 +790,8 @@ export default function DreamLogicWorkspace() {
             <article className="account-plan">
               <p>current plan</p>
               <h2>{tier}</h2>
-              <span>{tiers.find(([name]) => name === tier)?.[3]}</span>
-              <button className="secondary-button" onClick={() => goToSection("plans")}>manage plan</button>
+              <span>{tiers.find(([name]) => name === tier)?.[3]} available on this plan.</span>
+              <button className="secondary-button" onClick={() => goToSection("plans")}>view plans</button>
             </article>
           </div>
         )}
