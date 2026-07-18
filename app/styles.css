@@ -1739,3 +1739,139 @@ textarea::placeholder {
     min-height: 62px;
   }
 }
+
+/* launch trust and smoothness pass */
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: .58;
+}
+
+button:hover,
+a:hover {
+  border-color: rgba(143, 181, 245, .32);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid rgba(143, 181, 245, .62);
+  outline-offset: 2px;
+}
+
+.trust-card {
+  border-color: rgba(143, 181, 245, .18);
+  background:
+    linear-gradient(180deg, rgba(143, 181, 245, .055), rgba(248, 244, 236, .022)),
+    rgba(12, 12, 14, .78);
+}
+
+.trust-card h2 {
+  font-size: clamp(1.6rem, 3vw, 2.6rem);
+}
+
+.trust-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.trust-list span,
+.report-confidence {
+  display: grid;
+  gap: 4px;
+  border-top: 1px solid rgba(248, 244, 236, .09);
+  padding-top: 10px;
+  color: rgba(248, 244, 236, .62);
+  font-size: .92rem;
+  line-height: 1.42;
+}
+
+.trust-list strong,
+.report-confidence strong {
+  color: #b7cdfb;
+  font-size: .75rem;
+  letter-spacing: .08em;
+  text-transform: lowercase;
+}
+
+.report-confidence {
+  margin: 16px 0;
+  border: 1px solid rgba(143, 181, 245, .16);
+  background: rgba(143, 181, 245, .045);
+  padding: 12px 14px;
+}
+
+.report-confidence span {
+  color: rgba(248, 244, 236, .7);
+}
+
+.action-button,
+.placement,
+.balance span,
+.screen-guide,
+.guide-sheet,
+.tour-card,
+.mobile-tabs,
+article {
+  transition: border-color .18s ease, background .18s ease, transform .18s ease;
+}
+
+.action-button:hover,
+.placement:hover,
+.balance span:hover {
+  border-color: rgba(143, 181, 245, .28);
+  background: rgba(143, 181, 245, .055);
+}
+
+.guide-sheet,
+.tour-card {
+  animation: riseIn .22s ease both;
+}
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .001ms !important;
+    scroll-behavior: auto !important;
+    transition-duration: .001ms !important;
+  }
+}
+
+@media (max-width: 980px) {
+  .trust-list {
+    gap: 6px;
+  }
+
+  .trust-list span,
+  .report-confidence {
+    font-size: .86rem;
+  }
+}

@@ -85,6 +85,20 @@ const sectionGuides: Record<Section, { title: string; body: string }> = {
   account: { title: "save and restore", body: "sign in to save charts, notes, clients, reports, plan state, and imported context." }
 };
 
+const confidenceText: Record<BirthProfile["birthTimeCertainty"], string> = {
+  official_recorded: "high confidence for date and time based chart work.",
+  family_reported: "good for placements; timing should be checked with care.",
+  approximate: "good for placements; time-sensitive details need confirmation.",
+  rectified: "usable for timing when the rectification method is trusted.",
+  unknown: "placements use noon; time-sensitive claims stay separated."
+};
+
+const dataSourceNotes = [
+  ["calculation", "planetary positions are calculated from date and time with astronomy-engine."],
+  ["derived", "sign, degree, element, modality, and retrograde are derived from those longitudes."],
+  ["guardrail", "birth-time certainty controls how strongly timing-sensitive reading is presented."]
+];
+
 const tourSteps = [
   ["start with birth data", "confirm the date, time, place, and time certainty. if the time is unknown, dream logic keeps timing-sensitive reading separate."],
   ["read the chart", "open chart to see placements, element balance, modality balance, and retrograde status. use explain when a term is unclear."],
@@ -535,6 +549,14 @@ export default function DreamLogicWorkspace() {
               <h2>{lower(leadPlacement.body)} in {lower(leadPlacement.sign)}</h2>
               <span>{mode === "beginner" ? "start here, then check element and modality balance." : "use this as the lead angle, then verify with balance and timing."}</span>
             </article>
+            <article className="trust-card">
+              <p>reading confidence</p>
+              <h2>{profile.birthTimeCertainty.replaceAll("_", " ")}</h2>
+              <span>{confidenceText[profile.birthTimeCertainty]}</span>
+              <div className="trust-list">
+                {dataSourceNotes.map(([title, body]) => <span key={title}><strong>{title}</strong>{body}</span>)}
+              </div>
+            </article>
             <Balance title="element balance" items={elementBalance} onGuide={() => openGuide("element balance")} />
             <Balance title="modality balance" items={modalityBalance} onGuide={() => openGuide("modality balance")} />
           </div>
@@ -564,6 +586,13 @@ export default function DreamLogicWorkspace() {
           <div className="pane-grid">
             <Balance title="element balance" items={elementBalance} help="the repeated energy in the chart." onGuide={() => openGuide("element balance")} />
             <Balance title="modality balance" items={modalityBalance} help="the way that energy moves." onGuide={() => openGuide("modality balance")} />
+            <article className="trust-card">
+              <div className="card-title"><p>source check</p><button onClick={() => openGuide("time certainty")}>certainty</button></div>
+              <span>this chart uses astronomical longitudes first. interpretation begins after the placements are calculated.</span>
+              <div className="trust-list">
+                {dataSourceNotes.map(([title, body]) => <span key={title}><strong>{title}</strong>{body}</span>)}
+              </div>
+            </article>
             <article className="wide-card">
               <div className="card-title"><p>placements</p><button onClick={() => openGuide("placements")}>what is this?</button></div>
               <div className="placement-grid">
@@ -619,6 +648,10 @@ export default function DreamLogicWorkspace() {
             <p>report</p>
             <h2>{profile.name}</h2>
             <span>{placements.length} placements, {elementBalance[0]?.[0]} emphasis, {modalityBalance[0]?.[0]} modality lead, and saved notes ready.</span>
+            <div className="report-confidence">
+              <strong>source note</strong>
+              <span>calculated placements first. interpretation second. time certainty: {profile.birthTimeCertainty.replaceAll("_", " ")}.</span>
+            </div>
             <div className="paper">
               <AssetImage src="/brand/fulllitelogo.svg" alt="dream logic astrology suite" />
               <h3>primary chart</h3>
@@ -662,6 +695,10 @@ export default function DreamLogicWorkspace() {
                   </label>
                 </div>
                 <span>{importStatus}</span>
+              </div>
+              <div className="report-confidence">
+                <strong>hypnos context</strong>
+                <span>answers use current placements, report draft, journal note, and imported context when supplied.</span>
               </div>
               <div className="hypnos-thread">
                 {hypnosMessages.length === 0 && <span className="empty-thread">ask what the chart means, what to focus on today, or how to explain a report section.</span>}
