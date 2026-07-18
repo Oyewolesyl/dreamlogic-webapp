@@ -31,7 +31,8 @@ const localAnswer = (
   placements: Placement[],
   elementBalance: Array<[string, number]>,
   modalityBalance: Array<[string, number]>,
-  reportSections: ReportSection[]
+  reportSections: ReportSection[],
+  importedContext = ""
 ) => {
   const moon = placements.find((placement) => placement.body.toLowerCase() === "moon") ?? placements[1] ?? placements[0];
   const leadElement = elementBalance[0];
@@ -51,6 +52,7 @@ const localAnswer = (
       ? `the strongest modality is ${leadModality[0]} (${leadModality[1]} placements), which shows how the chart tends to move through pressure.`
       : "",
     leadReport?.body ? `report anchor: ${leadReport.body}` : "",
+    importedContext ? "imported report or workspace context is included, so compare it with the current chart before making the daily read." : "",
     "",
     "plain read: use the chart as a map of emphasis, not a sentence of fate. for today, name the strongest pattern, connect it to one practical choice, then keep private journal context separate until you choose to include it."
   ].filter(Boolean).join("\n");
@@ -69,9 +71,10 @@ export async function POST(request: NextRequest) {
   const elementBalance = Array.isArray(body.elementBalance) ? body.elementBalance as Array<[string, number]> : [];
   const modalityBalance = Array.isArray(body.modalityBalance) ? body.modalityBalance as Array<[string, number]> : [];
   const reportSections = Array.isArray(body.reportSections) ? body.reportSections as ReportSection[] : [];
+  const importedContext = compact(body.importedContext);
 
   const fallback = () => NextResponse.json({
-    answer: localAnswer(question, placements, elementBalance, modalityBalance, reportSections),
+    answer: localAnswer(question, placements, elementBalance, modalityBalance, reportSections, importedContext),
     limit,
     provider: "local"
   });
@@ -110,9 +113,10 @@ export async function POST(request: NextRequest) {
               `profile: ${compact(profile.name)} / ${compact(profile.birthDate)} / ${compact(profile.birthTime)} / ${compact(profile.locationLabel)} / ${compact(profile.birthTimeCertainty)}.`,
               `placements:\n${placementText}`,
               `report:\n${reportText}`,
+              importedContext ? `imported report/workspace context:\n${importedContext}` : "",
               `private journal context:\n${compact(body.journal)}`,
               `question:\n${question}`
-            ].join("\n\n")
+            ].filter(Boolean).join("\n\n")
           }
         ]
       })
@@ -125,7 +129,7 @@ export async function POST(request: NextRequest) {
       ?? data.output?.flatMap((item: { content?: Array<{ text?: string }> }) => item.content ?? []).map((part: { text?: string }) => part.text ?? "").join("\n");
 
     return NextResponse.json({
-      answer: compact(outputText) || localAnswer(question, placements, elementBalance, modalityBalance, reportSections),
+      answer: compact(outputText) || localAnswer(question, placements, elementBalance, modalityBalance, reportSections, importedContext),
       limit,
       provider: "openai"
     });

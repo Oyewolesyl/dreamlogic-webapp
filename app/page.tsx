@@ -35,8 +35,16 @@ const mobilePrimaryNav: Array<[Section, string]> = [
   ["home", "today"],
   ["birth", "birth"],
   ["chart", "chart"],
+  ["hypnos", "hypnos"],
+  ["account", "account"]
+];
+
+const mobileMoreNav: Array<[Section, string]> = [
   ["reports", "report"],
-  ["hypnos", "hypnos"]
+  ["timing", "timing"],
+  ["journal", "notes"],
+  ["practice", "clients"],
+  ["plans", "plans"]
 ];
 
 const glossary = [
@@ -47,6 +55,14 @@ const glossary = [
 ];
 
 const guideText: Record<string, string> = {
+  today: "today is the working desk. confirm the active chart, open the chart, prepare the report, save the workspace, or ask hypnos from here.",
+  birth: "birth keeps the source data clean: date, time, place, and certainty. this protects every chart and report that follows.",
+  chart: "chart shows the calculated placements and the balance patterns behind the reading.",
+  timing: "timing is for transits, calendar notes, stations, and future consultation windows.",
+  journal: "journal is private context. it stays out of the report and hypnos until you decide to include it.",
+  clients: "clients is for practice work: client records, consent, and consultation preparation.",
+  reports: "reports turns the chart, balance, and selected notes into a client-ready draft.",
+  account: "account is where you sign in, save or restore the workspace, and manage plan access.",
   "element balance": "element balance counts fire, earth, air, and water across the main placements so the repeated tone of the chart is clear.",
   "modality balance": "modality balance counts cardinal, fixed, and mutable placements. it helps explain whether the chart starts, sustains, or adapts energy most often.",
   placements: "placements are the planet, sign, degree, element, modality, and retrograde status. this is the raw chart language before interpretation.",
@@ -54,6 +70,19 @@ const guideText: Record<string, string> = {
   plans: "plans are separated by actual workflow: number of charts, timing depth, reports, client records, team seats, and research export.",
   "time certainty": "time certainty protects the reading. if the time is unknown, the app keeps timing-sensitive details separated.",
   hypnos: "hypnos ai reads the saved report context, placements, balance, journal note, and plan access before answering. free users can try it, paid plans unlock more room."
+};
+
+const sectionGuides: Record<Section, { title: string; body: string }> = {
+  home: { title: "start here", body: "this is the active workspace. check the chart, save progress, prepare a report, or move into hypnos when you need an explanation." },
+  birth: { title: "source data", body: "enter the birth record once. time certainty stays visible so beginners and practitioners know what can be trusted." },
+  chart: { title: "calculated chart", body: "read the placements first, then use element and modality balance to see the larger pattern." },
+  timing: { title: "timing notes", body: "keep transits, stations, dates, and consultation timing separate from the natal chart." },
+  journal: { title: "private notes", body: "write context here before deciding whether it belongs in a report or hypnos prompt." },
+  practice: { title: "client work", body: "save client records and keep private practitioner notes separate from client-facing language." },
+  reports: { title: "report draft", body: "turn the active chart into a structured report, then download or save it to the workspace." },
+  hypnos: { title: "hypnos ai", body: "ask questions using the current chart, report draft, journal note, and any imported report or workspace." },
+  plans: { title: "plan access", body: "choose by workflow: saved charts, timing depth, reports, clients, team seats, or research export." },
+  account: { title: "save and restore", body: "sign in to save charts, notes, clients, reports, plan state, and imported context." }
 };
 
 const tourSteps = [
@@ -183,6 +212,9 @@ export default function DreamLogicWorkspace() {
   const [hypnosQuestion, setHypnosQuestion] = useState("what does this chart mean for today?");
   const [hypnosMessages, setHypnosMessages] = useState<HypnosMessage[]>([]);
   const [hypnosUses, setHypnosUses] = useState(0);
+  const [importText, setImportText] = useState("");
+  const [importedContext, setImportedContext] = useState("");
+  const [importStatus, setImportStatus] = useState("no imported report yet.");
 
   const placements = useMemo(() => calculatePlacements(profile), [profile]);
   const elementBalance = useMemo(() => summarize(placements, "element"), [placements]);
@@ -331,6 +363,38 @@ export default function DreamLogicWorkspace() {
     }
   };
 
+  const applyImportedWorkspace = (text: string) => {
+    const cleaned = text.trim();
+    if (!cleaned) {
+      setImportStatus("paste a report or workspace export first.");
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(cleaned);
+      const state = parsed.state ?? parsed;
+      if (state.profile) setProfile(state.profile);
+      if (state.journal) setJournal(state.journal);
+      if (Array.isArray(state.clients)) setClients(state.clients);
+      if (state.tier) setTier(state.tier);
+      if (state.mode) setMode(state.mode);
+      setImportedContext(JSON.stringify(state.reportSections ?? state, null, 2));
+      setImportStatus("workspace import loaded into hypnos context.");
+      setNotice("workspace import is ready for hypnos.");
+    } catch {
+      setImportedContext(cleaned);
+      setImportStatus("report text imported into hypnos context.");
+      setNotice("report import is ready for hypnos.");
+    }
+  };
+
+  const importFile = async (file?: File) => {
+    if (!file) return;
+    const text = await file.text();
+    setImportText(text);
+    applyImportedWorkspace(text);
+  };
+
   const downloadReport = () => {
     const lines = [
       "dream logic report",
@@ -381,7 +445,8 @@ export default function DreamLogicWorkspace() {
           elementBalance,
           modalityBalance,
           reportSections,
-          journal
+          journal,
+          importedContext
         })
       });
       const data = await response.json();
@@ -402,7 +467,7 @@ export default function DreamLogicWorkspace() {
     <main className="app">
       <aside className="rail">
         <a className="logo" href={landingUrl}>
-          <img src="/brand/logomain.svg" alt="dream logic" />
+          <AssetImage src="/brand/logomain.svg" alt="dream logic" />
         </a>
         <nav aria-label="workspace">
           {nav.map(([key, label]) => (
@@ -414,7 +479,7 @@ export default function DreamLogicWorkspace() {
       <section className="work">
         <header className="worktop">
           <a className="mobile-logo" href={landingUrl}>
-            <img src="/brand/logomain.svg" alt="dream logic" />
+            <AssetImage src="/brand/logomain.svg" alt="dream logic" />
           </a>
           <div>
             <p>dream logic</p>
@@ -427,12 +492,11 @@ export default function DreamLogicWorkspace() {
             <a href={landingUrl}>landing</a>
             <button onClick={() => goToSection("account")}>sign in</button>
           </div>
-          <label className="mobile-switch">
-            <span>go to</span>
-            <select value={section} onChange={(event) => goToSection(event.target.value as Section)}>
-              {nav.map(([key, label]) => <option value={key} key={key}>{label}</option>)}
-            </select>
-          </label>
+          <div className="mobile-switch" aria-label="more workspace sections">
+            {mobileMoreNav.map(([key, label]) => (
+              <button className={section === key ? "on" : ""} key={key} onClick={() => goToSection(key)}>{label}</button>
+            ))}
+          </div>
         </header>
 
         {(notice || lastSavedAt) && (
@@ -442,20 +506,28 @@ export default function DreamLogicWorkspace() {
           </section>
         )}
 
+        <section className="screen-guide">
+          <div>
+            <p>{sectionGuides[section].title}</p>
+            <span>{sectionGuides[section].body}</span>
+          </div>
+          <button onClick={() => openGuide(section === "home" ? "today" : activeNav)}>guide</button>
+        </section>
+
         {section === "home" && (
           <div className="pane-grid">
             <article className="active-chart">
-              <img src="/brand/logomain.svg" alt="dream logic" />
+              <AssetImage src="/brand/logomain.svg" alt="dream logic" />
               <div>
                 <p>active chart</p>
                 <h2>{profile.name}</h2>
                 <span>{profile.birthDate} / {profile.birthTime} / {profile.locationLabel}</span>
               </div>
-              <div className="button-row">
-                <button onClick={() => goToSection("birth")}>edit birth data</button>
-                <button onClick={() => goToSection("chart")}>open chart</button>
-                <button onClick={() => goToSection("reports")}>prepare report</button>
-                <button onClick={saveWorkspace} disabled={loading === "save-workspace"}>{loading === "save-workspace" ? "saving..." : "save workspace"}</button>
+              <div className="action-grid">
+                <ActionButton label="edit birth data" detail="date, time, place, certainty" onClick={() => goToSection("birth")} tone="primary" />
+                <ActionButton label="open chart" detail="placements and balance" onClick={() => goToSection("chart")} />
+                <ActionButton label="prepare report" detail="build the reading draft" onClick={() => goToSection("reports")} />
+                <ActionButton label={loading === "save-workspace" ? "saving..." : "save workspace"} detail="store chart, notes, clients, report" onClick={saveWorkspace} disabled={loading === "save-workspace"} />
               </div>
             </article>
             <article>
@@ -548,7 +620,7 @@ export default function DreamLogicWorkspace() {
             <h2>{profile.name}</h2>
             <span>{placements.length} placements, {elementBalance[0]?.[0]} emphasis, {modalityBalance[0]?.[0]} modality lead, and saved notes ready.</span>
             <div className="paper">
-              <img src="/brand/fulllitelogo.svg" alt="dream logic astrology suite" />
+              <AssetImage src="/brand/fulllitelogo.svg" alt="dream logic astrology suite" />
               <h3>primary chart</h3>
               <p>{mode === "beginner" ? "technical chart lines are paired with plain-language meaning." : "compact technical report with interpretation anchors."}</p>
               <div className="report-sections">
@@ -575,6 +647,22 @@ export default function DreamLogicWorkspace() {
               <p>hypnos ai</p>
               <h2>ask about the chart</h2>
               <span>hypnos reads the current report draft, placements, balance, and journal context. free tier has {hypnosLimits.free} tries per session; your current {tier} limit is {hypnosLimits[tier]}.</span>
+              <div className="import-box">
+                <p>import report or workspace</p>
+                <textarea
+                  value={importText}
+                  onChange={(event) => setImportText(event.target.value)}
+                  placeholder="paste a dream logic report, notes, or workspace json here"
+                />
+                <div className="button-row compact-actions">
+                  <button className="secondary-button" onClick={() => applyImportedWorkspace(importText)}>use pasted import</button>
+                  <label className="file-button">
+                    upload file
+                    <input accept=".txt,.json,.md" onChange={(event) => importFile(event.target.files?.[0])} type="file" />
+                  </label>
+                </div>
+                <span>{importStatus}</span>
+              </div>
               <div className="hypnos-thread">
                 {hypnosMessages.length === 0 && <span className="empty-thread">ask what the chart means, what to focus on today, or how to explain a report section.</span>}
                 {hypnosMessages.map((message, index) => (
@@ -586,8 +674,8 @@ export default function DreamLogicWorkspace() {
               </div>
               <textarea value={hypnosQuestion} onChange={(event) => setHypnosQuestion(event.target.value)} />
               <div className="button-row">
-                <button onClick={askHypnos} disabled={loading === "hypnos"}>{loading === "hypnos" ? "reading..." : "ask hypnos"}</button>
-                <button onClick={saveWorkspace} disabled={loading === "save-workspace"}>save context</button>
+                <button className="primary-button" onClick={askHypnos} disabled={loading === "hypnos"}>{loading === "hypnos" ? "reading..." : "ask hypnos"}</button>
+                <button className="secondary-button" onClick={saveWorkspace} disabled={loading === "save-workspace"}>save context</button>
               </div>
               <span className="note">{hypnosRemaining} hypnos asks left on {tier}.</span>
             </article>
@@ -618,27 +706,27 @@ export default function DreamLogicWorkspace() {
         )}
 
         {section === "account" && (
-          <div className="pane-grid">
-            <article className="form-pane">
+          <div className="pane-grid account-grid">
+            <article className="form-pane account-pane">
               <p>account</p>
               <label>email<input value={email} onChange={(event) => setEmail(lower(event.target.value))} placeholder="you@example.com" /></label>
               <label>password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="password" /></label>
-              <div className="button-row">
-                <button onClick={() => auth("login")} disabled={loading === "login"}>{loading === "login" ? "checking..." : "sign in"}</button>
-                <button onClick={() => auth("signup")} disabled={loading === "signup"}>{loading === "signup" ? "creating..." : "create account"}</button>
+              <div className="button-row account-actions">
+                <button className="primary-button" onClick={() => auth("login")} disabled={loading === "login"}>{loading === "login" ? "checking..." : "sign in"}</button>
+                <button className="secondary-button" onClick={() => auth("signup")} disabled={loading === "signup"}>{loading === "signup" ? "creating..." : "create account"}</button>
               </div>
-              <div className="button-row">
-                <button onClick={saveWorkspace} disabled={loading === "save-workspace"}>{loading === "save-workspace" ? "saving..." : "save workspace"}</button>
-                <button onClick={() => loadWorkspace()} disabled={loading === "load-workspace"}>{loading === "load-workspace" ? "loading..." : "load workspace"}</button>
+              <div className="button-row account-actions">
+                <button className="secondary-button" onClick={saveWorkspace} disabled={loading === "save-workspace"}>{loading === "save-workspace" ? "saving..." : "save workspace"}</button>
+                <button className="secondary-button" onClick={() => loadWorkspace()} disabled={loading === "load-workspace"}>{loading === "load-workspace" ? "loading..." : "load workspace"}</button>
               </div>
               <span className="note">{notice}</span>
               {lastSavedAt && <span className="note">last saved {new Date(lastSavedAt).toLocaleString()}</span>}
             </article>
-            <article>
+            <article className="account-plan">
               <p>current plan</p>
               <h2>{tier}</h2>
               <span>{tiers.find(([name]) => name === tier)?.[3]}</span>
-              <button onClick={() => goToSection("plans")}>manage plan</button>
+              <button className="secondary-button" onClick={() => goToSection("plans")}>manage plan</button>
             </article>
           </div>
         )}
@@ -702,6 +790,25 @@ function Balance({ title, items, help, onGuide }: { title: string; items: Array<
         {items.map(([name, count]) => <span key={name}><strong>{count}</strong>{name}</span>)}
       </div>
     </article>
+  );
+}
+
+function AssetImage({ src, alt }: { src: string; alt: string }) {
+  const [loaded, setLoaded] = useState(false);
+
+  return (
+    <span className={`asset-frame ${loaded ? "loaded" : ""}`}>
+      <img src={src} alt={alt} onLoad={() => setLoaded(true)} />
+    </span>
+  );
+}
+
+function ActionButton({ label, detail, onClick, disabled, tone }: { label: string; detail: string; onClick: () => void; disabled?: boolean; tone?: "primary" }) {
+  return (
+    <button className={`action-button ${tone === "primary" ? "primary" : ""}`} disabled={disabled} onClick={onClick}>
+      <strong>{label}</strong>
+      <span>{detail}</span>
+    </button>
   );
 }
 
