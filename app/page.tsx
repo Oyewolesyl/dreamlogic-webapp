@@ -261,6 +261,10 @@ export default function DreamLogicWorkspace() {
     window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
   };
 
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+
+  const scrollToEnd = () => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
+
   const openGuide = (topic: string) => {
     setGuide(topic);
     setGuideOpen(true);
@@ -522,6 +526,7 @@ export default function DreamLogicWorkspace() {
             <p>dream logic</p>
             <h1>{activeNav}</h1>
           </div>
+          <button className="mobile-account-link" onClick={() => goToSection("account")}>account</button>
           <div className="tools">
             <button className={mode === "beginner" ? "on" : ""} onClick={() => setMode("beginner")}>beginner</button>
             <button className={mode === "expert" ? "on" : ""} onClick={() => setMode("expert")}>expert</button>
@@ -552,7 +557,7 @@ export default function DreamLogicWorkspace() {
             <button className={mode === "beginner" ? "on" : ""} onClick={() => setMode("beginner")}>beginner</button>
             <button className={mode === "expert" ? "on" : ""} onClick={() => setMode("expert")}>expert</button>
             <button onClick={() => setShowTour(true)}>tour</button>
-            <button onClick={() => openGuide(section === "home" ? "today" : activeNav)}>guide</button>
+            <button onClick={() => openGuide(section === "home" ? "today" : activeNav)}>explain</button>
           </div>
         </section>
 
@@ -706,8 +711,13 @@ export default function DreamLogicWorkspace() {
           <div className="pane-grid hypnos-grid">
             <article className="hypnos-panel">
               <p>hypnos ai</p>
-              <h2>ask about the chart</h2>
-              <span>hypnos reads the current report draft, placements, balance, and journal context. free tier has {hypnosLimits.free} tries per session; your current {tier} limit is {hypnosLimits[tier]}.</span>
+              <h2>explain this reading</h2>
+              <span>hypnos reads the current chart, report draft, journal note, and any imported report or workspace. use it when a placement, balance pattern, or daily reading needs plain explanation.</span>
+              <div className="hypnos-steps">
+                <span><strong>1</strong>import a report or use this workspace</span>
+                <span><strong>2</strong>ask what a chart section means</span>
+                <span><strong>3</strong>save the useful answer with the workspace</span>
+              </div>
               <div className="import-box">
                 <p>import report or workspace</p>
                 <textarea
@@ -811,7 +821,7 @@ export default function DreamLogicWorkspace() {
             </div>
             <div className="button-row">
               <button onClick={() => setGuideOpen(false)}>close</button>
-              <button onClick={() => goToSection("hypnos")}>ask hypnos</button>
+              <button onClick={() => goToSection("hypnos")}>explain with hypnos</button>
             </div>
           </aside>
         )}
@@ -839,6 +849,11 @@ export default function DreamLogicWorkspace() {
       <nav className="mobile-tabs" aria-label="mobile workspace">
         {mobilePrimaryNav.map(([key, label]) => <button className={section === key ? "on" : ""} key={key} onClick={() => goToSection(key)}>{label}</button>)}
       </nav>
+
+      <div className="quick-scroll" aria-label="scroll controls">
+        <button onClick={scrollToTop}>top</button>
+        <button onClick={scrollToEnd}>end</button>
+      </div>
     </main>
   );
 }

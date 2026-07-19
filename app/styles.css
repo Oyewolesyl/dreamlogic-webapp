@@ -2200,3 +2200,228 @@ article {
     grid-template-columns: 1fr;
   }
 }
+
+/* final correction: app-like mobile shell, readable reports, calmer data surfaces */
+.mobile-account-link {
+  display: none;
+}
+
+.quick-scroll {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 32;
+  display: grid;
+  gap: 6px;
+}
+
+.quick-scroll button {
+  display: grid;
+  place-items: center;
+  min-width: 52px;
+  min-height: 36px;
+  border: 1px solid rgba(248, 244, 236, .14);
+  background: rgba(8, 8, 10, .84);
+  color: rgba(248, 244, 236, .74);
+  font-size: .72rem;
+  font-weight: 850;
+  text-transform: lowercase;
+  backdrop-filter: blur(14px);
+}
+
+.paper {
+  background: #f8f4ec !important;
+  color: #111113 !important;
+  border-color: rgba(17, 17, 19, .12) !important;
+}
+
+.paper h3,
+.paper h4,
+.paper p,
+.paper li,
+.paper span {
+  color: #111113 !important;
+  opacity: 1 !important;
+}
+
+.paper h3 {
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: .96;
+}
+
+.paper h4 {
+  color: #1260b8 !important;
+  font-size: .9rem;
+  letter-spacing: .04em;
+}
+
+.paper p,
+.paper li {
+  color: rgba(17, 17, 19, .78) !important;
+}
+
+.report-sections section {
+  border-top-color: rgba(17, 17, 19, .14);
+}
+
+.hypnos-steps {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0;
+}
+
+.hypnos-steps span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(143, 181, 245, .16);
+  background: rgba(143, 181, 245, .045);
+  padding: 10px 12px;
+  color: rgba(248, 244, 236, .72);
+  line-height: 1.32;
+}
+
+.hypnos-steps strong {
+  display: grid;
+  place-items: center;
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(241, 190, 34, .32);
+  color: rgba(241, 190, 34, .9);
+  font-size: .82rem;
+}
+
+.balance span {
+  color: rgba(248, 244, 236, .78);
+}
+
+.balance strong {
+  color: rgba(248, 244, 236, .92);
+}
+
+.card-title button {
+  color: rgba(183, 205, 251, .9);
+}
+
+.action-button.primary {
+  background: rgba(241, 190, 34, .92);
+}
+
+.action-button.primary strong,
+.action-button.primary span {
+  color: #111113;
+}
+
+@media (max-width: 980px) {
+  .work {
+    padding-bottom: calc(92px + env(safe-area-inset-bottom));
+  }
+
+  .worktop {
+    grid-template-columns: 54px minmax(0, 1fr) auto;
+    gap: 9px;
+  }
+
+  .mobile-logo {
+    width: 52px;
+  }
+
+  .mobile-logo .asset-frame {
+    min-height: 42px;
+    background: transparent;
+  }
+
+  .worktop h1 {
+    font-size: clamp(1rem, 4.1vw, 1.32rem);
+    line-height: 1.05;
+  }
+
+  .mobile-account-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    border: 1px solid rgba(248, 244, 236, .12);
+    background: rgba(248, 244, 236, .035);
+    color: rgba(248, 244, 236, .72);
+    padding: 0 10px;
+    font-size: .72rem;
+    font-weight: 850;
+    text-transform: lowercase;
+  }
+
+  .mobile-switch {
+    display: none !important;
+  }
+
+  .screen-guide {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 9px;
+    margin-bottom: 10px;
+    padding: 11px 12px;
+  }
+
+  .screen-guide span {
+    font-size: .8rem;
+    line-height: 1.34;
+  }
+
+  .guide-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .guide-actions button {
+    min-height: 32px;
+  }
+
+  .active-chart {
+    background:
+      linear-gradient(180deg, rgba(8, 8, 10, .72), rgba(8, 8, 10, .9)),
+      url("/media/gemini-constellation-wide.jpg");
+    background-size: cover;
+    border-color: rgba(143, 181, 245, .16);
+  }
+
+  .action-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .action-button {
+    min-height: 56px;
+  }
+
+  .balance {
+    grid-template-columns: 1fr;
+  }
+
+  .balance span {
+    min-height: 46px;
+    grid-template-columns: auto 1fr;
+    justify-content: start;
+  }
+
+  .paper {
+    padding: 18px !important;
+  }
+
+  .paper .asset-frame {
+    max-width: 230px;
+  }
+
+  .hypnos-steps span {
+    align-items: start;
+  }
+
+  .quick-scroll {
+    right: 10px;
+    bottom: calc(62px + env(safe-area-inset-bottom));
+  }
+
+  .quick-scroll button {
+    min-width: 44px;
+    min-height: 32px;
+    font-size: .66rem;
+  }
+}
